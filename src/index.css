@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --color-brand: #0d9488;
+  --color-brand-dark: #0f766e;
+  --color-accent: #f97316;
+  --color-surface: #f8fafc;
+  --color-card: #ffffff;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+  font-feature-settings: "ss01", "ss02";
+}
+
+/* Featured carousel: disappear / come-up */
+@keyframes featured-exit {
+  to {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes featured-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.featured-exit {
+  animation: featured-exit 0.35s ease-out forwards;
+}
+
+.featured-enter {
+  animation: featured-enter 0.35s ease-out forwards;
+}
