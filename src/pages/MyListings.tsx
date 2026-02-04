@@ -1,7 +1,11 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useEvents } from '../context/EventsContext';
 import { getListingsBySeller } from '../data/listings';
+import { isApiEnabled } from '../api/client';
+import * as listingsApi from '../api/listings';
+import type { MarketplaceListing } from '../types';
 
 function formatPrice(n: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
@@ -14,8 +18,18 @@ function formatDate(iso: string) {
 export function MyListings() {
   const { user } = useAuth();
   const { getEventById } = useEvents();
-  const listings = user ? getListingsBySeller(user.id) : [];
-
+  const [listings, setListings] = useState<MarketplaceListing[]>([]);
+  useEffect(() => {
+    if (!user) {
+      setListings([]);
+      return;
+    }
+    if (isApiEnabled) {
+      listingsApi.getListingsBySeller(user.id).then(setListings).catch(() => setListings([]));
+    } else {
+      setListings(getListingsBySeller(user.id));
+    }
+  }, [user?.id]);
   if (!user) return null;
 
   return (

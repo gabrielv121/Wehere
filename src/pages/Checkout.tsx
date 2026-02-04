@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { useEvents } from '../context/EventsContext';
 import { addPurchase } from '../data/userPurchases';
 import { SELLER_FEE_PERCENT, BUYER_FEE_PERCENT } from '../data/listings';
+import { isApiEnabled } from '../api/client';
+import * as ordersApi from '../api/orders';
 import type { TicketListing } from '../types';
 
 const CHECKOUT_STORAGE_KEY = 'wehere_checkout';
@@ -85,16 +87,39 @@ export function Checkout() {
   const sellerFeePercent = isMarketplace ? SELLER_FEE_PERCENT : 0;
   const sellerPayout = isMarketplace ? subtotal * (1 - sellerFeePercent / 100) : undefined;
 
-  function handleConfirm() {
+  async function handleConfirm() {
     setError('');
     if (!user || !event || !listing) return;
+    if (!listing.listingId || !listing.sellerId) {
+      setError('Invalid listing.');
+      return;
+    }
     if (!name.trim() || !email.trim()) {
       setError('Name and email are required.');
       return;
     }
     setConfirming(true);
     try {
-      const status = Math.random() > 0.2 ? 'confirmed' : 'pending'; // demo: mostly confirmed
+      if (isApiEnabled) {
+        const purchase = await ordersApi.createOrder({
+          eventId: listing.eventId,
+          eventName: event.title,
+          eventDate: event.date,
+          eventImage: event.image,
+          venue: { name: event.venue.name, city: event.venue.city, state: event.venue.state },
+          section: listing.section,
+          row: listing.row,
+          quantity: listing.quantity,
+          pricePerTicket: listing.pricePerTicket,
+          totalPrice: listing.totalPrice,
+          listingId: listing.listingId,
+          sellerId: listing.sellerId,
+        });
+        sessionStorage.removeItem(CHECKOUT_STORAGE_KEY);
+        navigate('/checkout/success', { state: { orderId: purchase.id, status: 'confirmed' } });
+        return;
+      }
+      const status = Math.random() > 0.2 ? 'confirmed' : 'pending';
       const purchase = addPurchase({
         userId: user.id,
         eventId: listing.eventId,

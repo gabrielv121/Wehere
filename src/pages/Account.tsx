@@ -1,14 +1,27 @@
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getPurchases } from '../data/userPurchases';
 import { useEvents } from '../context/EventsContext';
-import { useMemo } from 'react';
+import { isApiEnabled } from '../api/client';
+import * as ordersApi from '../api/orders';
+import type { Purchase } from '../types';
 
 export function Account() {
   const { user, logout } = useAuth();
   const { getEventById } = useEvents();
-
-  const purchases = useMemo(() => (user ? getPurchases(user.id) : []), [user]);
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  useEffect(() => {
+    if (!user) {
+      setPurchases([]);
+      return;
+    }
+    if (isApiEnabled) {
+      ordersApi.getMyOrders().then(setPurchases).catch(() => setPurchases([]));
+    } else {
+      setPurchases(getPurchases(user.id));
+    }
+  }, [user?.id]);
   const totalOrders = purchases.length;
   const upcomingCount = useMemo(() => {
     const today = new Date();

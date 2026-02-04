@@ -1,6 +1,10 @@
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getSalesBySeller } from '../data/userPurchases';
 import { SELLER_FEE_PERCENT } from '../data/listings';
+import { isApiEnabled } from '../api/client';
+import * as ordersApi from '../api/orders';
+import type { Purchase } from '../types';
 
 function formatPrice(n: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(n);
@@ -8,7 +12,18 @@ function formatPrice(n: number) {
 
 export function Payouts() {
   const { user } = useAuth();
-  const sales = user ? getSalesBySeller(user.id) : [];
+  const [sales, setSales] = useState<Purchase[]>([]);
+  useEffect(() => {
+    if (!user) {
+      setSales([]);
+      return;
+    }
+    if (isApiEnabled) {
+      ordersApi.getMySales().then(setSales).catch(() => setSales([]));
+    } else {
+      setSales(getSalesBySeller(user.id));
+    }
+  }, [user?.id]);
   const completed = sales.filter((o) => o.status === 'delivered' || o.status === 'confirmed');
   const totalPayout = completed.reduce((sum, o) => sum + (o.sellerPayout ?? 0), 0);
   const totalFees = completed.reduce((sum, o) => {

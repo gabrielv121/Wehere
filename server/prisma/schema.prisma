@@ -1,0 +1,94 @@
+// WeHere backend — SQLite for dev/MVP; switch to postgresql for production if needed
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String   @id @default(cuid())
+  email                String   @unique
+  passwordHash         String
+  name                 String
+  role                 String   @default("user") // "user" | "admin"
+  country              String?
+  phone                String?
+  paymentMethodOnFile  Boolean  @default(false)
+  cardLast4            String?
+  cardBrand            String?
+  createdAt            DateTime @default(now())
+
+  listings Listing[]
+  orders   Order[]    @relation("BuyerOrders")
+  sales    Order[]    @relation("SellerOrders")
+}
+
+model Event {
+  id         String   @id @default(cuid())
+  title      String
+  category   String   // concert | sports | theater | comedy | family
+  venue      String   // JSON: { id, name, city, state, image? }
+  date       String   // ISO datetime
+  image      String
+  minPrice   Int
+  maxPrice   Int?
+  featured   Boolean  @default(false)
+  visible    Boolean  @default(true)
+  externalUrl String?
+  createdAt  DateTime @default(now())
+
+  listings Listing[]
+  orders   Order[]
+}
+
+model Listing {
+  id             String   @id @default(cuid())
+  eventId        String
+  sellerId       String
+  sellerName     String
+  section        String
+  row            String?
+  quantity       Int
+  pricePerTicket Float
+  totalPrice     Float
+  status         String   @default("available") // available | pending | sold
+  dynamicPricing Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  event Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  seller User  @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  orders Order[]
+}
+
+model Order {
+  id                    String    @id @default(cuid())
+  userId                String    // buyer
+  eventId               String
+  eventName             String
+  eventDate             String
+  eventImage            String?
+  venue                 String    // JSON: { name, city, state }
+  orderDate             String    // ISO
+  section               String
+  row                   String?
+  quantity              Int
+  pricePerTicket        Float
+  totalPrice            Float
+  status                String    @default("confirmed") // pending | confirmed | delivered | cancelled
+  listingId             String?
+  sellerId              String?
+  sellerFeePercent      Int?
+  sellerPayout          Float?
+  ticketVerifiedAt      String?
+  sellerPayoutReleasedAt String?
+  buyerName             String?
+  buyerEmail            String?
+
+  event   Event    @relation(fields: [eventId], references: [id])
+  buyer   User     @relation("BuyerOrders", fields: [userId], references: [id])
+  seller  User?    @relation("SellerOrders", fields: [sellerId], references: [id])
+  listing Listing? @relation(fields: [listingId], references: [id])
+}

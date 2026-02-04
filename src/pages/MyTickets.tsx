@@ -1,7 +1,10 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getUpcomingPurchases } from '../data/userPurchases';
-import { useMemo } from 'react';
+import { isApiEnabled } from '../api/client';
+import * as ordersApi from '../api/orders';
+import type { Purchase } from '../types';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', {
@@ -20,10 +23,25 @@ function formatPrice(n: number) {
 
 export function MyTickets() {
   const { user } = useAuth();
-  const tickets = useMemo(
-    () => (user ? getUpcomingPurchases(user.id).sort((a, b) => (a.eventDate < b.eventDate ? -1 : 1)) : []),
-    [user]
-  );
+  const [tickets, setTickets] = useState<Purchase[]>([]);
+  useEffect(() => {
+    if (!user) {
+      setTickets([]);
+      return;
+    }
+    if (isApiEnabled) {
+      ordersApi.getMyOrders().then((list) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const upcoming = list
+          .filter((p) => p.status !== 'cancelled' && new Date(p.eventDate) >= today)
+          .sort((a, b) => (a.eventDate < b.eventDate ? -1 : 1));
+        setTickets(upcoming);
+      }).catch(() => setTickets([]));
+    } else {
+      setTickets(getUpcomingPurchases(user.id).sort((a, b) => (a.eventDate < b.eventDate ? -1 : 1)));
+    }
+  }, [user?.id]);
 
   return (
     <div>

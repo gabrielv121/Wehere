@@ -1,7 +1,10 @@
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getPurchases } from '../data/userPurchases';
-import { useMemo } from 'react';
+import { isApiEnabled } from '../api/client';
+import * as ordersApi from '../api/orders';
+import type { Purchase } from '../types';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', {
@@ -43,7 +46,18 @@ function statusLabel(status: string) {
 
 export function PurchaseHistory() {
   const { user } = useAuth();
-  const purchases = useMemo(() => (user ? getPurchases(user.id) : []), [user]);
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  useEffect(() => {
+    if (!user) {
+      setPurchases([]);
+      return;
+    }
+    if (isApiEnabled) {
+      ordersApi.getMyOrders().then(setPurchases).catch(() => setPurchases([]));
+    } else {
+      setPurchases(getPurchases(user.id));
+    }
+  }, [user?.id]);
 
   const orders = useMemo(() => {
     const today = new Date();

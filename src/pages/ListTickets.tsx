@@ -3,6 +3,8 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth, sellerRequirementsComplete } from '../context/AuthContext';
 import { useEvents } from '../context/EventsContext';
 import { addListing, getMarketPriceStats } from '../data/listings';
+import { isApiEnabled } from '../api/client';
+import * as listingsApi from '../api/listings';
 
 const CARD_BRANDS = ['Visa', 'Mastercard', 'Amex', 'Discover'];
 
@@ -116,16 +118,27 @@ export function ListTickets() {
 
     setSubmitting(true);
     try {
-      addListing({
-        eventId,
-        sellerId: user!.id,
-        sellerName: user!.name,
-        section: section.trim(),
-        row: row.trim() || undefined,
-        quantity,
-        pricePerTicket: finalPrice,
-        dynamicPricing: useDynamicPricing,
-      });
+      if (isApiEnabled) {
+        await listingsApi.addListing({
+          eventId,
+          section: section.trim(),
+          row: row.trim() || undefined,
+          quantity,
+          pricePerTicket: finalPrice,
+          dynamicPricing: useDynamicPricing,
+        });
+      } else {
+        addListing({
+          eventId,
+          sellerId: user!.id,
+          sellerName: user!.name,
+          section: section.trim(),
+          row: row.trim() || undefined,
+          quantity,
+          pricePerTicket: finalPrice,
+          dynamicPricing: useDynamicPricing,
+        });
+      }
       navigate(`/events/${eventId}`, { state: { listed: true } });
     } catch {
       setError('Something went wrong. Please try again.');

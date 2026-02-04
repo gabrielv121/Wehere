@@ -36,12 +36,11 @@ export interface MarketPriceStats {
   count: number;
 }
 
-/** Get current market price stats for an event from existing listings. Optional eventFallback for when there are no listings. */
-export function getMarketPriceStats(
-  eventId: string,
+/** Compute market price stats from a list of listings. Use when you have listings from API. */
+export function getMarketPriceStatsFromListings(
+  listings: MarketplaceListing[],
   eventFallback?: { minPrice: number; maxPrice?: number }
 ): MarketPriceStats {
-  const listings = getListingsByEvent(eventId);
   if (listings.length === 0) {
     const min = eventFallback?.minPrice ?? 0;
     const max = eventFallback?.maxPrice ?? min;
@@ -53,12 +52,20 @@ export function getMarketPriceStats(
   const min = Math.min(...prices);
   const max = Math.max(...prices);
   const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
-  // Suggested: slightly below current lowest to be competitive (or avg if only one listing)
   const suggested =
     listings.length === 1
       ? Math.max(1, Math.round(avg * 100) / 100)
       : Math.max(1, Math.round(min * 0.97 * 100) / 100);
   return { min, max, avg, suggested, count: listings.length };
+}
+
+/** Get current market price stats for an event from existing listings (local storage). */
+export function getMarketPriceStats(
+  eventId: string,
+  eventFallback?: { minPrice: number; maxPrice?: number }
+): MarketPriceStats {
+  const listings = getListingsByEvent(eventId);
+  return getMarketPriceStatsFromListings(listings, eventFallback);
 }
 
 /** Get all listings created by a seller. */

@@ -13,12 +13,10 @@ A **resale marketplace**: sellers list tickets they own, buyers purchase with a 
 
 ## Tech
 
-- React 19 + TypeScript + Vite
-- Tailwind CSS v4
-- React Router 7
-- Mock data (no backend)
+- **Frontend:** React 19 + TypeScript + Vite, Tailwind CSS v4, React Router 7
+- **Backend (optional):** Node.js + Express + TypeScript, Prisma + SQLite, JWT auth
 
-## Run
+## Run (frontend only — mock data)
 
 ```bash
 npm install
@@ -26,6 +24,58 @@ npm run dev
 ```
 
 Open [http://localhost:5173](http://localhost:5173).
+
+## Backend API (Node + Express + SQLite)
+
+To run the app with a real database and auth:
+
+1. **Install and set up the server**
+
+   ```bash
+   cd server
+   npm install
+   cp .env.example .env
+   # Edit .env: set JWT_SECRET to a long random string for production
+   ```
+
+2. **Create the database and seed it**
+
+   ```bash
+   npx prisma generate
+   npx prisma db push
+   npx prisma db seed
+   ```
+
+   This creates an **admin** user: `admin@wehere.com` / `password`.
+
+3. **Start the API**
+
+   ```bash
+   npm run dev
+   ```
+
+   API runs at [http://localhost:3001](http://localhost:3001). Use the frontend with `VITE_API_URL=http://localhost:3001` (see below).
+
+4. **Wire the frontend to the API**
+
+   In the project root, create or edit `.env`:
+
+   ```
+   VITE_API_URL=http://localhost:3001
+   ```
+
+   Then run the frontend (`npm run dev` from the repo root). The app will use the API for auth, events, listings, and orders when `VITE_API_URL` is set.
+
+**API overview**
+
+| Area   | Endpoints |
+|--------|-----------|
+| Auth   | `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`, `PATCH /api/auth/profile`, `PATCH /api/auth/seller-info` |
+| Events | `GET /api/events`, `GET /api/events/:id`, `POST /api/events` (admin), `PATCH /api/events/:id` (admin), `DELETE /api/events/:id` (admin) |
+| Listings | `GET /api/listings/event/:eventId`, `GET /api/listings/seller/:sellerId`, `POST /api/listings`, `GET /api/listings/:id`, `PATCH /api/listings/:id/status` |
+| Orders | `POST /api/orders` (checkout), `GET /api/orders/me`, `GET /api/orders/sales`, `GET /api/orders/admin` (admin), `PATCH /api/orders/:id/status`, `PATCH /api/orders/:id/verify`, `PATCH /api/orders/:id/release-payout` |
+
+Protected routes expect: `Authorization: Bearer <token>`.
 
 ## Build
 

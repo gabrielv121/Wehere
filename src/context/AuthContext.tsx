@@ -1,5 +1,8 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { migratePurchasesToUser } from '../data/userPurchases';
+import { isApiEnabled } from '../api/client';
+import * as authApi from '../api/auth';
+import type { ApiUser } from '../api/auth';
 
 const STORAGE_KEY = 'wehere_user';
 
@@ -10,11 +13,8 @@ export interface User {
   email: string;
   name: string;
   role: UserRole;
-  /** Seller requirements: country of residence (we only support US) */
   country?: string;
-  /** Seller requirements: contact phone for payouts */
   phone?: string;
-  /** Seller requirements: payment method on file to receive profit after buyer confirmation */
   paymentMethodOnFile?: boolean;
   cardLast4?: string;
   cardBrand?: string;
@@ -41,7 +41,6 @@ interface AuthContextValue extends AuthState {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-/** Stable user id from email so the same account always has the same id (purchases keyed by this). */
 function stableUserId(email: string): string {
   const normalized = email.trim().toLowerCase();
   try {
@@ -52,12 +51,25 @@ function stableUserId(email: string): string {
   }
 }
 
+function apiUserToUser(u: ApiUser): User {
+  return {
+    id: u.id,
+    email: u.email,
+    name: u.name,
+    role: u.role as UserRole,
+    country: u.country,
+    phone: u.phone,
+    paymentMethodOnFile: u.paymentMethodOnFile,
+    cardLast4: u.cardLast4,
+    cardBrand: u.cardBrand,
+  };
+}
+
 function loadStoredUser(): User | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const user = JSON.parse(raw) as User;
-    // Migrate to stable id so the same email always has the same id (purchases keyed correctly)
     const stableId = stableUserId(user.email);
     if (user.id !== stableId) {
       migratePurchasesToUser(user.id, stableId);
@@ -80,15 +92,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ user: null, isLoading: true });
 
   useEffect(() => {
-    const user = loadStoredUser();
-    setState({ user, isLoading: false });
+    if (isApiEnabled) {
+      authApi
+        .getMe()
+        .then((u) => setState({ user: apiUserToUser(u), isLoading: false }))
+        .catch(() => setState({ user: null, isLoading: false }));
+    } else {
+      const user = loadStoredUser();
+      setState({ user, isLoading: false });
+    }
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    // Demo: accept any email + password "password"; admin@wehere.com = admin role
     if (!email.trim()) return { ok: false, error: 'Email is required' };
+    if (isApiEnabled) {
+      try {
+        const { user } = await authApi.login(email, password);
+        const u = apiUserToUser(user);
+        saveUser(u);
+        setState((s) => ({ ...s, user: u }));
+        return { ok: true };
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : 'Login failed' };
+      }
+    }
     if (password !== 'password') return { ok: false, error: 'Invalid email or password' };
-
     const name = email.split('@')[0];
     const isAdmin = email.trim().toLowerCase() === 'admin@wehere.com';
     const user: User = {
@@ -106,7 +134,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!email.trim()) return { ok: false, error: 'Email is required' };
     if (password.length < 6) return { ok: false, error: 'Password must be at least 6 characters' };
     if (!name.trim()) return { ok: false, error: 'Name is required' };
-
+    if (isApiEnabled) {
+      try {
+        const { user } = await authApi.register(email, password, name);
+        const u = apiUserToUser(user);
+        saveUser(u);
+        setState((s) => ({ ...s, user: u }));
+        return { ok: true };
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : 'Signup failed' };
+      }
+    }
     const emailTrimmed = email.trim();
     const user: User = {
       id: stableUserId(emailTrimmed),
@@ -120,6 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
+    if (isApiEnabled) authApi.logoutApi();
     saveUser(null);
     setState((s) => ({ ...s, user: null }));
   }, []);
@@ -129,6 +168,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!current) return { ok: false, error: 'Not logged in' };
     if (!name.trim()) return { ok: false, error: 'Name is required' };
     if (!email.trim()) return { ok: false, error: 'Email is required' };
+    if (isApiEnabled) {
+      try {
+        const u = await authApi.updateProfile(name, email);
+        const updated = apiUserToUser(u);
+        saveUser(updated);
+        setState((s) => ({ ...s, user: updated }));
+        return { ok: true };
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : 'Update failed' };
+      }
+    }
     const updated: User = { ...current, name: name.trim(), email: email.trim(), role: current.role };
     saveUser(updated);
     setState((s) => ({ ...s, user: updated }));
@@ -149,8 +199,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data.country.trim().toUpperCase() !== 'US')
         return { ok: false, error: 'We currently only support sellers in the United States.' };
       if (!data.phone?.trim()) return { ok: false, error: 'Contact phone is required' };
-      if (data.paymentMethodOnFile && (!data.cardLast4 || data.cardLast4.length !== 4))
+      if (data.paymentMethodOnFile && (!data.cardLast4 || data.cardLast4.replace(/\D/g, '').length !== 4))
         return { ok: false, error: 'Card last 4 digits are required when adding a payment method.' };
+      if (isApiEnabled) {
+        try {
+          const u = await authApi.updateSellerInfo(data);
+          const updated = apiUserToUser(u);
+          saveUser(updated);
+          setState((s) => ({ ...s, user: updated }));
+          return { ok: true };
+        } catch (err) {
+          return { ok: false, error: err instanceof Error ? err.message : 'Update failed' };
+        }
+      }
       const updated: User = {
         ...current,
         country: data.country.trim(),
@@ -184,7 +245,6 @@ export function useAuth() {
   return ctx;
 }
 
-/** True when user has completed seller requirements: US residence, phone, payment method on file. */
 export function sellerRequirementsComplete(user: User | null): boolean {
   if (!user) return false;
   const countryOk = user.country?.trim().toUpperCase() === 'US';

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   getAdminOrders,
@@ -6,6 +6,8 @@ import {
   setOrderTicketVerified,
   setOrderPayoutReleased,
 } from '../../data/userPurchases';
+import { isApiEnabled } from '../../api/client';
+import * as ordersApi from '../../api/orders';
 import type { AdminOrder as AdminOrderType, OrderStatus } from '../../types';
 
 function formatDate(iso: string) {
@@ -43,42 +45,78 @@ export function AdminOrders() {
   const [orders, setOrders] = useState<AdminOrderType[]>(() => getAdminOrders());
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    setOrders(getAdminOrders());
+  const refreshOrders = useCallback(() => {
+    if (isApiEnabled) {
+      ordersApi.getAdminOrders().then(setOrders).catch(() => {});
+    } else {
+      setOrders(getAdminOrders());
+    }
   }, []);
 
-  function refreshOrders() {
-    setOrders(getAdminOrders());
-  }
+  useEffect(() => {
+    refreshOrders();
+  }, [refreshOrders]);
 
-  function handleStatusChange(order: AdminOrderType, newStatus: OrderStatus) {
+  async function handleStatusChange(order: AdminOrderType, newStatus: OrderStatus) {
     if (order.status === newStatus) return;
     setUpdatingId(order.id);
-    const ok = updateOrderStatus(order.userId, order.id, newStatus);
-    if (ok) refreshOrders();
-    setUpdatingId(null);
+    try {
+      if (isApiEnabled) {
+        await ordersApi.updateOrderStatus(order.id, newStatus);
+      } else {
+        const ok = updateOrderStatus(order.userId, order.id, newStatus);
+        if (!ok) return;
+      }
+      refreshOrders();
+    } finally {
+      setUpdatingId(null);
+    }
   }
 
-  function handleVerifyTicket(order: AdminOrderType) {
+  async function handleVerifyTicket(order: AdminOrderType) {
     setUpdatingId(order.id);
-    const ok = setOrderTicketVerified(order.userId, order.id);
-    if (ok) refreshOrders();
-    setUpdatingId(null);
+    try {
+      if (isApiEnabled) {
+        await ordersApi.setOrderTicketVerified(order.id);
+      } else {
+        const ok = setOrderTicketVerified(order.userId, order.id);
+        if (!ok) return;
+      }
+      refreshOrders();
+    } finally {
+      setUpdatingId(null);
+    }
   }
 
-  function handleMarkDelivered(order: AdminOrderType) {
+  async function handleMarkDelivered(order: AdminOrderType) {
     if (order.status === 'delivered') return;
     setUpdatingId(order.id);
-    const ok = updateOrderStatus(order.userId, order.id, 'delivered');
-    if (ok) refreshOrders();
-    setUpdatingId(null);
+    try {
+      if (isApiEnabled) {
+        await ordersApi.updateOrderStatus(order.id, 'delivered');
+      } else {
+        const ok = updateOrderStatus(order.userId, order.id, 'delivered');
+        if (!ok) return;
+      }
+      refreshOrders();
+    } finally {
+      setUpdatingId(null);
+    }
   }
 
-  function handleReleasePayout(order: AdminOrderType) {
+  async function handleReleasePayout(order: AdminOrderType) {
     setUpdatingId(order.id);
-    const ok = setOrderPayoutReleased(order.userId, order.id);
-    if (ok) refreshOrders();
-    setUpdatingId(null);
+    try {
+      if (isApiEnabled) {
+        await ordersApi.setOrderPayoutReleased(order.id);
+      } else {
+        const ok = setOrderPayoutReleased(order.userId, order.id);
+        if (!ok) return;
+      }
+      refreshOrders();
+    } finally {
+      setUpdatingId(null);
+    }
   }
 
   const isMarketplaceOrder = (o: AdminOrderType) => o.sellerId != null && o.listingId != null;

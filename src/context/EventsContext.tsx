@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, type ReactNode } from 'react';
 import type { Event } from '../types';
 import { DEFAULT_EVENTS } from '../data/events';
+import { isApiEnabled } from '../api/client';
+import * as eventsApi from '../api/events';
 
 const STORAGE_KEY = 'wehere_events';
 
@@ -12,11 +14,12 @@ interface EventsContextValue extends EventsState {
   getEventById: (id: string) => Event | undefined;
   getUniqueCities: () => string[];
   getUniqueStates: () => string[];
-  addEvent: (event: Omit<Event, 'id'>) => Event;
-  updateEvent: (id: string, updates: Partial<Omit<Event, 'id'>>) => void;
-  deleteEvent: (id: string) => void;
-  setFeatured: (id: string, featured: boolean) => void;
-  setVisible: (id: string, visible: boolean) => void;
+  addEvent: (event: Omit<Event, 'id'>) => Promise<Event>;
+  updateEvent: (id: string, updates: Partial<Omit<Event, 'id'>>) => Promise<void>;
+  deleteEvent: (id: string) => Promise<void>;
+  setFeatured: (id: string, featured: boolean) => Promise<void>;
+  setVisible: (id: string, visible: boolean) => Promise<void>;
+  eventsLoading: boolean;
 }
 
 const EventsContext = createContext<EventsContextValue | null>(null);
@@ -38,14 +41,25 @@ function saveEvents(events: Event[]) {
 
 export function EventsProvider({ children }: { children: ReactNode }) {
   const [events, setEvents] = useState<Event[]>(() => {
+    if (isApiEnabled) return [];
     const stored = loadStoredEvents();
     if (stored.length > 0) return stored;
     saveEvents(DEFAULT_EVENTS);
     return DEFAULT_EVENTS;
   });
+  const [eventsLoading, setEventsLoading] = useState(isApiEnabled);
 
   useEffect(() => {
-    saveEvents(events);
+    if (isApiEnabled) {
+      eventsApi
+        .getEvents()
+        .then(setEvents)
+        .catch(() => setEvents([]))
+        .finally(() => setEventsLoading(false));
+    }
+  }, []);
+  useEffect(() => {
+    if (!isApiEnabled) saveEvents(events);
   }, [events]);
 
   const getEventById = useCallback(
@@ -63,7 +77,12 @@ export function EventsProvider({ children }: { children: ReactNode }) {
     return Array.from(set).sort();
   }, [events]);
 
-  const addEvent = useCallback((event: Omit<Event, 'id'>) => {
+  const addEvent = useCallback(async (event: Omit<Event, 'id'>): Promise<Event> => {
+    if (isApiEnabled) {
+      const created = await eventsApi.createEvent(event);
+      setEvents((prev) => [...prev, created]);
+      return created;
+    }
     const id = crypto.randomUUID();
     const venueId = event.venue.id || `v-${id}`;
     const newEvent: Event = {
@@ -77,21 +96,27 @@ export function EventsProvider({ children }: { children: ReactNode }) {
     return newEvent;
   }, []);
 
-  const updateEvent = useCallback((id: string, updates: Partial<Omit<Event, 'id'>>) => {
-    setEvents((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, ...updates } : e))
-    );
+  const updateEvent = useCallback(async (id: string, updates: Partial<Omit<Event, 'id'>>) => {
+    if (isApiEnabled) {
+      await eventsApi.updateEvent(id, updates);
+      setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, ...updates } : e)));
+      return;
+    }
+    setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, ...updates } : e)));
   }, []);
 
-  const deleteEvent = useCallback((id: string) => {
+  const deleteEvent = useCallback(async (id: string) => {
+    if (isApiEnabled) await eventsApi.deleteEvent(id);
     setEvents((prev) => prev.filter((e) => e.id !== id));
   }, []);
 
-  const setFeatured = useCallback((id: string, featured: boolean) => {
+  const setFeatured = useCallback(async (id: string, featured: boolean) => {
+    if (isApiEnabled) await eventsApi.updateEvent(id, { featured });
     setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, featured } : e)));
   }, []);
 
-  const setVisible = useCallback((id: string, visible: boolean) => {
+  const setVisible = useCallback(async (id: string, visible: boolean) => {
+    if (isApiEnabled) await eventsApi.updateEvent(id, { visible });
     setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, visible } : e)));
   }, []);
 
@@ -106,8 +131,9 @@ export function EventsProvider({ children }: { children: ReactNode }) {
       deleteEvent,
       setFeatured,
       setVisible,
+      eventsLoading,
     }),
-    [events, getEventById, getUniqueCities, getUniqueStates, addEvent, updateEvent, deleteEvent, setFeatured, setVisible]
+    [events, getEventById, getUniqueCities, getUniqueStates, addEvent, updateEvent, deleteEvent, setFeatured, setVisible, eventsLoading]
   );
 
   return <EventsContext.Provider value={value}>{children}</EventsContext.Provider>;

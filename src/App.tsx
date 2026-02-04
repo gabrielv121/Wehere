@@ -29,7 +29,7 @@ import { AdminUsers } from './pages/admin/AdminUsers';
 import { AdminOrders } from './pages/admin/AdminOrders';
 
 // For GitHub Pages (and other subpath deploys), base is e.g. /WeHere/
-const basename = import.meta.env.BASE_URL.replace(/\/$/, '') || undefined;
+const basename = (import.meta.env.BASE_URL ?? '').replace(/\/$/, '') || undefined;
 
 function App() {
   return (

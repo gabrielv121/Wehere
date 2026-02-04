@@ -2,6 +2,7 @@ import { Link, NavLink, Outlet, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useEffect } from 'react';
 import { seedDemoPurchases } from '../data/userPurchases';
+import { isApiEnabled } from '../api/client';
 
 const NAV = [
   { to: '/account', end: true, label: 'Overview' },
@@ -18,7 +19,7 @@ export function AccountLayout() {
   const { user, isLoading } = useAuth();
 
   useEffect(() => {
-    if (user) seedDemoPurchases(user.id);
+    if (user && !isApiEnabled) seedDemoPurchases(user.id);
   }, [user]);
 
   if (isLoading) {

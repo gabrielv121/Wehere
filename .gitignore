@@ -15,6 +15,10 @@ dist-ssr
 .env.local
 .env.*.local
 
+# Server SQLite DB (optional; commit if you want seeded dev DB in repo)
+server/prisma/*.db
+server/prisma/*.db-journal
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

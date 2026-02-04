@@ -1,9 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useEvents } from '../context/EventsContext';
 import { getTicketsForEvent, getSeatsForEvent, getVenueMapForEvent } from '../data/events';
 import { getListingsByEvent, listingToTicketListing } from '../data/listings';
+import { isApiEnabled } from '../api/client';
+import * as listingsApi from '../api/listings';
+import type { TicketListing } from '../types';
 import { TicketListingRow } from '../components/TicketListingRow';
 import { TicketQuantityFilter } from '../components/TicketQuantityFilter';
 import { SeatMap } from '../components/SeatMap';
@@ -33,9 +36,17 @@ export function EventDetail() {
 
   const notFound = !event || event.visible === false;
 
-  const marketplaceListings = useMemo(() => {
-    if (!id) return [];
-    return getListingsByEvent(id).map(listingToTicketListing);
+  const [marketplaceListings, setMarketplaceListings] = useState<TicketListing[]>([]);
+  useEffect(() => {
+    if (!id) {
+      setMarketplaceListings([]);
+      return;
+    }
+    if (isApiEnabled) {
+      listingsApi.getListingsByEvent(id).then((list) => setMarketplaceListings(list.map(listingToTicketListing))).catch(() => setMarketplaceListings([]));
+    } else {
+      setMarketplaceListings(getListingsByEvent(id).map(listingToTicketListing));
+    }
   }, [id]);
   const mockTickets = id ? getTicketsForEvent(id) : [];
   const tickets = marketplaceListings.length > 0 ? marketplaceListings : mockTickets;

@@ -1,7 +1,11 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getSalesBySeller } from '../data/userPurchases';
 import { SELLER_FEE_PERCENT } from '../data/listings';
+import { isApiEnabled } from '../api/client';
+import * as ordersApi from '../api/orders';
+import type { Purchase } from '../types';
 
 function formatPrice(n: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(n);
@@ -13,8 +17,18 @@ function formatDate(iso: string) {
 
 export function MySales() {
   const { user } = useAuth();
-  const sales = user ? getSalesBySeller(user.id) : [];
-
+  const [sales, setSales] = useState<Purchase[]>([]);
+  useEffect(() => {
+    if (!user) {
+      setSales([]);
+      return;
+    }
+    if (isApiEnabled) {
+      ordersApi.getMySales().then(setSales).catch(() => setSales([]));
+    } else {
+      setSales(getSalesBySeller(user.id));
+    }
+  }, [user?.id]);
   if (!user) return null;
 
   return (

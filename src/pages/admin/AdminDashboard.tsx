@@ -1,6 +1,10 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useEvents } from '../../context/EventsContext';
 import { getAdminOrders } from '../../data/userPurchases';
+import { isApiEnabled } from '../../api/client';
+import * as ordersApi from '../../api/orders';
+import type { AdminOrder } from '../../types';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -8,7 +12,14 @@ function formatDate(iso: string) {
 
 export function AdminDashboard() {
   const { events } = useEvents();
-  const orders = getAdminOrders();
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
+  useEffect(() => {
+    if (isApiEnabled) {
+      ordersApi.getAdminOrders().then(setOrders).catch(() => setOrders([]));
+    } else {
+      setOrders(getAdminOrders());
+    }
+  }, []);
   const featuredCount = events.filter((e) => e.featured).length;
   const upcomingCount = events.filter((e) => new Date(e.date) >= new Date()).length;
 

@@ -51,11 +51,10 @@ export function AdminEventForm() {
     }
   }, [existing]);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setSaving(true);
-
     const min = parseInt(minPrice, 10);
     const max = maxPrice.trim() ? parseInt(maxPrice, 10) : undefined;
     if (!title.trim()) {
@@ -78,7 +77,6 @@ export function AdminEventForm() {
       setSaving(false);
       return;
     }
-
     const venue = {
       id: existing?.venue.id ?? `v-${crypto.randomUUID()}`,
       name: venueName.trim(),
@@ -86,35 +84,38 @@ export function AdminEventForm() {
       state: venueState.trim(),
     };
     const dateIso = new Date(date).toISOString();
-
-    if (isEdit && id) {
-      updateEvent(id, {
-        title: title.trim(),
-        category,
-        venue,
-        date: dateIso,
-        image: image.trim() || 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800',
-        minPrice: min,
-        maxPrice: max,
-        featured,
-        visible,
-      });
+    try {
+      if (isEdit && id) {
+        await updateEvent(id, {
+          title: title.trim(),
+          category,
+          venue,
+          date: dateIso,
+          image: image.trim() || 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800',
+          minPrice: min,
+          maxPrice: max,
+          featured,
+          visible,
+        });
+      } else {
+        await addEvent({
+          title: title.trim(),
+          category,
+          venue,
+          date: dateIso,
+          image: image.trim() || 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800',
+          minPrice: min,
+          maxPrice: max,
+          featured,
+          visible,
+        });
+      }
       navigate('/admin/events');
-    } else {
-      addEvent({
-        title: title.trim(),
-        category,
-        venue,
-        date: dateIso,
-        image: image.trim() || 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800',
-        minPrice: min,
-        maxPrice: max,
-        featured,
-        visible,
-      });
-      navigate('/admin/events');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save');
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   if (isEdit && !existing) {
