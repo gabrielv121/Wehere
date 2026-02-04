@@ -73,6 +73,28 @@ export function getPurchases(userId: string): Purchase[] {
   return list.slice().sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
 }
 
+/** Move purchases from one user id to another (e.g. when migrating to stable id). Clears old key after copy. */
+export function migratePurchasesToUser(fromUserId: string, toUserId: string): void {
+  if (fromUserId === toUserId) return;
+  const list = loadPurchases(fromUserId);
+  if (list.length === 0) {
+    try {
+      localStorage.removeItem(storageKey(fromUserId));
+    } catch {
+      // ignore
+    }
+    return;
+  }
+  const existing = loadPurchases(toUserId);
+  const merged = [...existing, ...list].sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
+  savePurchases(toUserId, merged);
+  try {
+    localStorage.removeItem(storageKey(fromUserId));
+  } catch {
+    // ignore
+  }
+}
+
 /** Get upcoming purchases (event date >= today; includes pending, confirmed, delivered so all purchased tickets show) */
 export function getUpcomingPurchases(userId: string): Purchase[] {
   const today = new Date();
@@ -169,6 +191,40 @@ export function updateOrderStatus(userId: string, orderId: string, status: Order
   const adminIdx = all.findIndex((o) => o.id === orderId);
   if (adminIdx !== -1) {
     all[adminIdx] = { ...all[adminIdx], status };
+    saveAllOrders(all);
+  }
+  return true;
+}
+
+/** Admin: mark ticket as verified (legit). Updates user list + global list. */
+export function setOrderTicketVerified(userId: string, orderId: string): boolean {
+  const now = new Date().toISOString();
+  const list = loadPurchases(userId);
+  const idx = list.findIndex((p) => p.id === orderId);
+  if (idx === -1) return false;
+  list[idx] = { ...list[idx], ticketVerifiedAt: now };
+  savePurchases(userId, list);
+  const all = loadAllOrders();
+  const adminIdx = all.findIndex((o) => o.id === orderId);
+  if (adminIdx !== -1) {
+    all[adminIdx] = { ...all[adminIdx], ticketVerifiedAt: now };
+    saveAllOrders(all);
+  }
+  return true;
+}
+
+/** Admin: mark seller payout as released (funds transferred to seller). Updates user list + global list. */
+export function setOrderPayoutReleased(userId: string, orderId: string): boolean {
+  const now = new Date().toISOString();
+  const list = loadPurchases(userId);
+  const idx = list.findIndex((p) => p.id === orderId);
+  if (idx === -1) return false;
+  list[idx] = { ...list[idx], sellerPayoutReleasedAt: now };
+  savePurchases(userId, list);
+  const all = loadAllOrders();
+  const adminIdx = all.findIndex((o) => o.id === orderId);
+  if (adminIdx !== -1) {
+    all[adminIdx] = { ...all[adminIdx], sellerPayoutReleasedAt: now };
     saveAllOrders(all);
   }
   return true;

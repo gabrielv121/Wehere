@@ -53,6 +53,8 @@ export interface MarketplaceListing {
   totalPrice: number;
   status: MarketplaceListingStatus;
   createdAt: string; // ISO
+  /** When true, price was set from market and can be adjusted over time */
+  dynamicPricing?: boolean;
 }
 
 export interface Seat {
@@ -103,6 +105,10 @@ export interface Purchase {
   sellerFeePercent?: number;
   /** Marketplace: amount released to seller after delivery (totalPrice - fee) */
   sellerPayout?: number;
+  /** Admin: when the ticket was verified as legit (ISO) */
+  ticketVerifiedAt?: string;
+  /** Admin: when payout was released to the seller (ISO) */
+  sellerPayoutReleasedAt?: string;
 }
 
 /** Order with buyer info for admin list */

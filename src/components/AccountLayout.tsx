@@ -6,6 +6,7 @@ import { seedDemoPurchases } from '../data/userPurchases';
 const NAV = [
   { to: '/account', end: true, label: 'Overview' },
   { to: '/account/profile', end: false, label: 'Profile' },
+  { to: '/account/seller-info', end: false, label: 'Seller info' },
   { to: '/account/tickets', end: false, label: 'My tickets' },
   { to: '/account/orders', end: false, label: 'Purchase history' },
   { to: '/account/listings', end: false, label: 'My listings' },
@@ -44,21 +45,27 @@ export function AccountLayout() {
         </Link>
       </div>
 
-      <nav className="flex gap-1 p-1 rounded-xl bg-slate-100 w-fit mb-8" aria-label="Account sections">
-        {NAV.map(({ to, end, label }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            className={({ isActive }) =>
-              `px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-              }`
-            }
-          >
-            {label}
-          </NavLink>
-        ))}
+      <nav
+        className="flex gap-1 p-1 rounded-xl bg-slate-100 mb-8 overflow-x-auto overscroll-x-contain scroll-smooth -mx-4 px-4 sm:mx-0 sm:px-0 w-full sm:w-fit"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+        aria-label="Account sections"
+      >
+        <div className="flex gap-1 flex-nowrap min-w-0 pr-2 sm:pr-0">
+          {NAV.map(({ to, end, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              className={({ isActive }) =>
+                `px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+                  isActive ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`
+              }
+            >
+              {label}
+            </NavLink>
+          ))}
+        </div>
       </nav>
 
       <Outlet />

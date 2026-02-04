@@ -15,6 +15,7 @@ import { Profile } from './pages/Profile';
 import { MyListings } from './pages/MyListings';
 import { MySales } from './pages/MySales';
 import { Payouts } from './pages/Payouts';
+import { SellerInfo } from './pages/SellerInfo';
 import { ListTickets } from './pages/ListTickets';
 import { Checkout } from './pages/Checkout';
 import { CheckoutSuccess } from './pages/CheckoutSuccess';
@@ -48,6 +49,7 @@ function App() {
             <Route path="tickets" element={<MyTickets />} />
             <Route path="orders" element={<PurchaseHistory />} />
             <Route path="listings" element={<MyListings />} />
+            <Route path="seller-info" element={<SellerInfo />} />
             <Route path="list-tickets" element={<ListTickets />} />
             <Route path="sales" element={<MySales />} />
             <Route path="payouts" element={<Payouts />} />
