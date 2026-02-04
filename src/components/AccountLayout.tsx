@@ -34,7 +34,7 @@ export function AccountLayout() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto w-full py-8 px-4 overflow-x-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <h1 className="text-2xl font-bold text-slate-900">Account</h1>
         <Link
@@ -45,28 +45,31 @@ export function AccountLayout() {
         </Link>
       </div>
 
-      <nav
-        className="flex gap-1 p-1 rounded-xl bg-slate-100 mb-8 overflow-x-auto overscroll-x-contain scroll-smooth -mx-4 px-4 sm:mx-0 sm:px-0 w-full sm:w-fit"
-        style={{ WebkitOverflowScrolling: 'touch' }}
-        aria-label="Account sections"
-      >
-        <div className="flex gap-1 flex-nowrap min-w-0 pr-2 sm:pr-0">
-          {NAV.map(({ to, end, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              className={({ isActive }) =>
-                `px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
-                  isActive ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                }`
-              }
-            >
-              {label}
-            </NavLink>
-          ))}
-        </div>
-      </nav>
+      {/* Mobile: full-width scrollable nav that spans edge-to-edge */}
+      <div className="w-[100vw] relative left-1/2 -translate-x-1/2 sm:w-full sm:relative sm:left-auto sm:translate-x-0 mb-8">
+        <nav
+          className="flex gap-1 p-1 rounded-none sm:rounded-xl bg-slate-100 overflow-x-auto overscroll-x-contain scroll-smooth sm:w-fit w-full"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+          aria-label="Account sections"
+        >
+          <div className="flex gap-1 flex-nowrap min-w-0 px-4 sm:px-1 py-1 sm:pr-0">
+            {NAV.map(({ to, end, label }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={end}
+                className={({ isActive }) =>
+                  `px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+                    isActive ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                  }`
+                }
+              >
+                {label}
+              </NavLink>
+            ))}
+          </div>
+        </nav>
+      </div>
 
       <Outlet />
     </div>
