@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Deploy WeHere to GitHub Pages
 
 on:
   push:
@@ -10,8 +10,9 @@ permissions:
   pages: write
   id-token: write
 
-concurrency: group = "pages"
-cancel-in-progress: false
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -25,6 +26,7 @@ jobs:
           cache: "npm"
 
       - run: npm ci
+
       - run: npm run build
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
