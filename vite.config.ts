@@ -4,7 +4,18 @@ import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    // Rewrite favicon to use base path so it works on GitHub Pages (e.g. /WeHere/vite.svg)
+    {
+      name: 'html-base-favicon',
+      transformIndexHtml(html) {
+        const base = (process.env.BASE_PATH || '/').replace(/\/?$/, '/')
+        return html.replace('href="./vite.svg"', `href="${base}vite.svg"`)
+      },
+    },
+  ],
   // For GitHub Pages: set in CI via BASE_PATH env (e.g. /WeHere/)
   base: process.env.BASE_PATH || '/',
   server: {},
