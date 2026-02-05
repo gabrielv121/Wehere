@@ -1,34 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import { useEvents } from '../context/EventsContext';
 import { getMarketPriceStats } from '../data/listings';
-import type { Category } from '../types';
 
-const CARD_BRANDS = ['Visa', 'Mastercard', 'Amex', 'Discover'];
 const LIST_DRAFT_KEY = 'wehere_listing_draft';
 
 function formatPrice(n: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
 }
 
-export function SaveListingDraftButton(props: {
-  onValid: (draft: {
-    eventId: string;
-    section: string;
-    row?: string;
-    quantity: number;
-    pricePerTicket: number;
-    useDynamicPricing: boolean;
-  }) => void;
-}) {
-  return null;
-}
-
 export function SellTickets() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
   const { events, getEventById } = useEvents();
   const visibleEvents = events.filter((e) => e.visible !== false);
 
