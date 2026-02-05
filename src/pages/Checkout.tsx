@@ -94,6 +94,10 @@ export function Checkout() {
       setError('Invalid listing.');
       return;
     }
+    if (listing.sellerId === user.id) {
+      setError('You cannot purchase your own listing.');
+      return;
+    }
     if (!name.trim() || !email.trim()) {
       setError('Name and email are required.');
       return;

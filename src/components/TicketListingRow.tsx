@@ -21,6 +21,8 @@ export function TicketListingRow({
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const isOwnMarketplaceListing = Boolean(user && listing.sellerId && user.id === listing.sellerId);
+
   function handleGetTickets() {
     if (externalUrl) return; // handled by link
     if (!user) {
@@ -37,6 +39,10 @@ export function TicketListingRow({
 
   const getTicketsButton = user?.role === 'admin' ? (
     <span className="px-4 py-2 rounded-lg bg-slate-100 text-slate-500 text-sm font-medium">Admin</span>
+  ) : isOwnMarketplaceListing ? (
+    <span className="px-4 py-2 rounded-lg bg-slate-100 text-slate-500 text-xs font-medium" title="You can’t buy your own listing.">
+      Your listing
+    </span>
   ) : externalUrl ? (
     <a
       href={externalUrl}
