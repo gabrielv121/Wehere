@@ -79,7 +79,7 @@ export function MyTickets() {
                     {p.venue.name} · {p.venue.city}, {p.venue.state}
                   </p>
                   <p className="text-slate-600 text-sm mt-1">{formatDate(p.eventDate)}</p>
-                  <div className="mt-3 flex flex-wrap gap-3 text-sm">
+                  <div className="mt-3 flex flex-wrap gap-3 text-sm items-center">
                     <span className="font-medium text-slate-700">
                       {p.section}
                       {p.row != null && ` · Row ${p.row}`}
@@ -90,12 +90,12 @@ export function MyTickets() {
                     <span className="font-semibold text-teal-600">{formatPrice(p.totalPrice)}</span>
                     {p.status === 'pending' && (
                       <span className="rounded-full bg-amber-100 text-amber-800 text-xs font-medium px-2 py-0.5">
-                        Pending
+                        Pending · tickets not delivered yet
                       </span>
                     )}
                     {p.status === 'delivered' && (
                       <span className="rounded-full bg-teal-100 text-teal-700 text-xs font-medium px-2 py-0.5">
-                        Delivered
+                        Delivered · you’re all set
                       </span>
                     )}
                   </div>

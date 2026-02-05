@@ -17,6 +17,7 @@ import { MySales } from './pages/MySales';
 import { Payouts } from './pages/Payouts';
 import { SellerInfo } from './pages/SellerInfo';
 import { ListTickets } from './pages/ListTickets';
+import { SellTickets } from './pages/SellTickets';
 import { Checkout } from './pages/Checkout';
 import { CheckoutSuccess } from './pages/CheckoutSuccess';
 import { Legal } from './pages/Legal';
@@ -43,6 +44,7 @@ function App() {
             <Route path="events/:id" element={<EventDetail />} />
             <Route path="checkout" element={<Checkout />} />
             <Route path="checkout/success" element={<CheckoutSuccess />} />
+            <Route path="sell" element={<SellTickets />} />
             <Route path="account" element={<AccountLayout />}>
             <Route index element={<Account />} />
             <Route path="profile" element={<Profile />} />

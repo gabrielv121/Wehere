@@ -21,8 +21,8 @@ export function Layout() {
             <Link to="/events" className="text-slate-600 hover:text-teal-600 font-medium transition-colors">
               Events
             </Link>
-            {user && user.role !== 'admin' && (
-              <Link to="/account/list-tickets" className="text-slate-600 hover:text-teal-600 font-medium transition-colors">
+            {user?.role !== 'admin' && (
+              <Link to="/sell" className="text-slate-600 hover:text-teal-600 font-medium transition-colors">
                 Sell tickets
               </Link>
             )}
@@ -100,8 +100,8 @@ export function Layout() {
                 <Link to="/events" onClick={closeMenu} className="py-3 px-3 rounded-lg text-slate-700 font-medium hover:bg-slate-100 hover:text-teal-600">
                   Events
                 </Link>
-                {user && user.role !== 'admin' && (
-                  <Link to="/account/list-tickets" onClick={closeMenu} className="py-3 px-3 rounded-lg text-slate-700 font-medium hover:bg-slate-100 hover:text-teal-600">
+                {user?.role !== 'admin' && (
+                  <Link to="/sell" onClick={closeMenu} className="py-3 px-3 rounded-lg text-slate-700 font-medium hover:bg-slate-100 hover:text-teal-600">
                     Sell tickets
                   </Link>
                 )}

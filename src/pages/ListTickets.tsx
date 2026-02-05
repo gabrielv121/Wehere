@@ -7,6 +7,7 @@ import { isApiEnabled } from '../api/client';
 import * as listingsApi from '../api/listings';
 
 const CARD_BRANDS = ['Visa', 'Mastercard', 'Amex', 'Discover'];
+const LIST_DRAFT_KEY = 'wehere_listing_draft';
 
 function formatPrice(n: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
@@ -24,9 +25,6 @@ export function ListTickets() {
   const [step, setStep] = useState<1 | 2>(1);
 
   const [eventId, setEventId] = useState(stateEventId);
-  useEffect(() => {
-    if (stateEventId) setEventId(stateEventId);
-  }, [stateEventId]);
   const [section, setSection] = useState('');
   const [row, setRow] = useState('');
   const [quantity, setQuantity] = useState(2);
@@ -46,6 +44,34 @@ export function ListTickets() {
     () => getMarketPriceStats(eventId, event ? { minPrice: event.minPrice, maxPrice: event.maxPrice } : undefined),
     [eventId, event]
   );
+
+  useEffect(() => {
+    // If we arrived from the public /sell flow, restore draft and jump to step 2.
+    try {
+      const raw = sessionStorage.getItem(LIST_DRAFT_KEY);
+      if (raw) {
+        const draft: {
+          eventId: string;
+          section: string;
+          row?: string;
+          quantity: number;
+          pricePerTicket: number;
+          useDynamicPricing: boolean;
+        } = JSON.parse(raw);
+        if (draft.eventId) setEventId(draft.eventId);
+        setSection(draft.section ?? '');
+        setRow(draft.row ?? '');
+        setQuantity(draft.quantity ?? 2);
+        setPricePerTicket(String(draft.pricePerTicket ?? ''));
+        setUseDynamicPricing(Boolean(draft.useDynamicPricing));
+        setStep(2);
+      } else if (stateEventId) {
+        setEventId(stateEventId);
+      }
+    } catch {
+      if (stateEventId) setEventId(stateEventId);
+    }
+  }, [stateEventId]);
 
   useEffect(() => {
     if (user) {
@@ -138,6 +164,11 @@ export function ListTickets() {
           pricePerTicket: finalPrice,
           dynamicPricing: useDynamicPricing,
         });
+      }
+      try {
+        sessionStorage.removeItem(LIST_DRAFT_KEY);
+      } catch {
+        // ignore
       }
       navigate(`/events/${eventId}`, { state: { listed: true } });
     } catch {

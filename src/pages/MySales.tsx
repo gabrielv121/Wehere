@@ -59,7 +59,7 @@ export function MySales() {
                 </p>
                 <p className="text-slate-400 text-xs mt-1">Sold {formatDate(order.orderDate)}</p>
               </div>
-              <div className="text-right">
+              <div className="text-right space-y-1">
                 <p className="font-semibold text-slate-900">{formatPrice(order.totalPrice)}</p>
                 {order.sellerPayout != null && (
                   <p className="text-slate-500 text-sm">You receive {formatPrice(order.sellerPayout)}</p>
@@ -73,8 +73,21 @@ export function MySales() {
                         : 'bg-slate-100 text-slate-600'
                   }`}
                 >
-                  {order.status}
+                  {order.status === 'pending'
+                    ? 'Pending (waiting on buyer / admin)'
+                    : order.status === 'confirmed'
+                      ? 'Confirmed – waiting for delivery'
+                      : order.status === 'delivered'
+                        ? order.sellerPayoutReleasedAt
+                          ? 'Delivered – payout sent'
+                          : 'Delivered – payout pending'
+                        : 'Cancelled'}
                 </span>
+                {order.status === 'delivered' && !order.sellerPayoutReleasedAt && (
+                  <p className="text-xs text-slate-500">
+                    Payout will be released after WeHere finishes the verification flow.
+                  </p>
+                )}
               </div>
             </li>
           ))}

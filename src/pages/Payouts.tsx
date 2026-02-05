@@ -39,7 +39,7 @@ export function Payouts() {
       <p className="text-slate-500 text-sm mb-6">
         We charge a {SELLER_FEE_PERCENT}% fee on each sale. Buyers pay no fees. Payout is released after the order is completed.
       </p>
-      <div className="grid gap-4 sm:grid-cols-2 mb-8">
+      <div className="grid gap-4 sm:grid-cols-2 mb-6">
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-slate-500 text-sm">Total payout (completed sales)</p>
           <p className="text-2xl font-bold text-teal-600 mt-1">{formatPrice(totalPayout)}</p>
@@ -52,9 +52,34 @@ export function Payouts() {
       {completed.length === 0 ? (
         <p className="text-slate-500 text-sm">No completed payouts yet. Sales appear here once the order is marked delivered.</p>
       ) : (
-        <p className="text-slate-500 text-sm">
-          {completed.length} completed sale{completed.length !== 1 ? 's' : ''}. In a real app, payouts would be sent to your bank account.
-        </p>
+        <>
+          <p className="text-slate-500 text-sm mb-4">
+            {completed.length} completed sale{completed.length !== 1 ? 's' : ''}. In a real app, payouts would be sent to your bank account or card on file.
+          </p>
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <h3 className="text-sm font-semibold text-slate-900 mb-3">Recent completed payouts</h3>
+            <ul className="space-y-2 text-sm text-slate-700 max-h-64 overflow-auto">
+              {completed.slice(0, 5).map((o) => (
+                <li key={o.id} className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{o.eventName}</p>
+                    <p className="text-xs text-slate-500">
+                      {o.quantity} ticket{o.quantity > 1 ? 's' : ''} ·{' '}
+                      {o.sellerPayoutReleasedAt ? 'Payout released' : 'Payout pending'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-teal-600">
+                      {formatPrice(
+                        o.sellerPayout ?? o.totalPrice * (1 - (o.sellerFeePercent ?? SELLER_FEE_PERCENT) / 100)
+                      )}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
       )}
     </div>
   );
