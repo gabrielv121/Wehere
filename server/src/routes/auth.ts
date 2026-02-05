@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
-import { requireAuth, signToken, type AuthRequest } from '../middleware/auth.js';
+import { requireAuth, requireAdmin, signToken, type AuthRequest } from '../middleware/auth.js';
 
 const prisma = new PrismaClient();
 export const authRouter = Router();
@@ -82,7 +82,7 @@ authRouter.post('/login', async (req, res) => {
 });
 
 authRouter.get('/me', requireAuth, async (req, res) => {
-  const { userId } = (req as Request & { user: JwtPayload }).user;
+  const { userId } = (req as AuthRequest).user;
   try {
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -140,7 +140,7 @@ authRouter.patch('/profile', requireAuth, async (req, res) => {
 });
 
 authRouter.patch('/seller-info', requireAuth, async (req, res) => {
-  const { userId } = (req as Request & { user: JwtPayload }).user;
+  const { userId } = (req as AuthRequest).user;
   const { country, phone, paymentMethodOnFile, cardLast4, cardBrand } = req.body as {
     country?: string;
     phone?: string;
@@ -176,5 +176,28 @@ authRouter.patch('/seller-info', requireAuth, async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Update failed' });
+  }
+});
+
+/** GET /api/auth/users — list all users (admin only). */
+authRouter.get('/users', requireAuth, requireAdmin, async (_req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        country: true,
+        phone: true,
+        paymentMethodOnFile: true,
+        createdAt: true,
+      },
+    });
+    res.json(users);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to list users' });
   }
 });

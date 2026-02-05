@@ -64,3 +64,18 @@ export async function updateSellerInfo(data: {
 export function logoutApi(): void {
   clearToken();
 }
+
+export interface AdminUserRow {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  country?: string | null;
+  phone?: string | null;
+  paymentMethodOnFile?: boolean;
+  createdAt: string;
+}
+
+export async function getAdminUsers(): Promise<AdminUserRow[]> {
+  return apiFetch<AdminUserRow[]>('/api/auth/users');
+}
