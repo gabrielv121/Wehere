@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { useEvents } from '../context/EventsContext';
 import { getMarketPriceStats } from '../data/listings';
 
@@ -12,6 +13,7 @@ function formatPrice(n: number) {
 export function SellTickets() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const { events, getEventById } = useEvents();
   const visibleEvents = events.filter((e) => e.visible !== false);
 
