@@ -16,6 +16,15 @@ A **resale marketplace**: sellers list tickets they own, buyers purchase with a 
 - **Frontend:** React 19 + TypeScript + Vite, Tailwind CSS v4, React Router 7
 - **Backend (optional):** Node.js + Express + TypeScript, Prisma + SQLite, JWT auth
 
+## Deploy to GitHub Pages
+
+The repo includes a workflow (`.github/workflows/deploy.yml`) that builds the app with the correct base path and deploys the **built** site. For it to work:
+
+1. In the repo: **Settings → Pages → Build and deployment → Source** choose **GitHub Actions** (not "Deploy from a branch").
+2. Push to `main` or run the workflow manually; the workflow builds with `BASE_PATH=/WeHere/` and deploys the `dist` artifact.
+
+If you see `GET .../src/main.tsx 404`, GitHub Pages is still serving the repo source instead of the workflow artifact — switch the Pages source to **GitHub Actions**.
+
 ## Run (frontend only — mock data)
 
 ```bash

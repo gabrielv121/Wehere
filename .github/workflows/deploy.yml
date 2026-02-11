@@ -1,3 +1,6 @@
+# Deploy WeHere to GitHub Pages
+# Required: In repo Settings → Pages → Build and deployment → Source: choose "GitHub Actions".
+# Otherwise GitHub serves the repo source and /src/main.tsx 404s.
 name: Deploy WeHere to GitHub Pages
 
 on:
@@ -27,9 +30,20 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run build
+      - name: Build
+        run: |
+          export BASE_PATH="/${{ github.event.repository.name }}/"
+          npm run build
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
+
+
+      - name: Verify built index (no dev script)
+        run: |
+          if grep -q 'src="/src/main.tsx"' dist/index.html || grep -q "src='/src/main.tsx'" dist/index.html; then
+            echo "::error::dist/index.html still has dev entry /src/main.tsx — build base path not applied"
+            exit 1
+          fi
 
       # GitHub Pages serves 404.html for unknown paths — use same SPA so client-side routes work
       - run: cp dist/index.html dist/404.html

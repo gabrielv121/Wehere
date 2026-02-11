@@ -10,12 +10,22 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    // Rewrite favicon to use base path so it works on GitHub Pages (e.g. /WeHere/vite.svg)
+    // Rewrite favicon: in dev public files are at server root; in build use base for GitHub Pages
     {
       name: 'html-base-favicon',
-      transformIndexHtml(html) {
-        const base = (process.env.BASE_PATH || '/').replace(/\/?$/, '/')
-        return html.replace('href="./vite.svg"', `href="${base}vite.svg"`)
+      transformIndexHtml: {
+        order: 'pre',
+        handler(html, ctx) {
+          const base = (process.env.BASE_PATH || '/').replace(/\/?$/, '/')
+          const isDev = Boolean(ctx?.server)
+          const href =
+            isDev && base !== '/'
+              ? '/vite.svg' // dev with base path: Vite serves public at root
+              : base === '/'
+                ? './vite.svg'
+                : `${base}vite.svg`
+          return html.replace('href="./vite.svg"', `href="${href}"`)
+        },
       },
     },
   ],
