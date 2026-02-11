@@ -1,24 +1,45 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import { PrismaClient } from '@prisma/client';
 import { authRouter } from './routes/auth.js';
 import { eventsRouter } from './routes/events.js';
 import { listingsRouter } from './routes/listings.js';
-import { ordersRouter } from './routes/orders.js';
+import { ordersRouter, stripeWebhookHandler } from './routes/orders.js';
 
 const app = express();
 const PORT = process.env.PORT ?? 3001;
+const prisma = new PrismaClient();
 
 app.use(cors({ origin: true, credentials: true }));
+app.post('/api/orders/webhook', express.raw({ type: 'application/json' }), stripeWebhookHandler);
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    console.log(`${req.method} ${req.path} ${res.statusCode} ${Date.now() - start}ms`);
+  });
+  next();
+});
 
 app.use('/api/auth', authRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/listings', listingsRouter);
 app.use('/api/orders', ordersRouter);
 
-app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, message: 'WeHere API' });
+app.get('/api/health', async (_req, res) => {
+  try {
+    await prisma.$connect();
+    res.json({ ok: true, message: 'WeHere API' });
+  } catch (e) {
+    console.error('Health check failed:', e);
+    res.status(503).json({
+      ok: false,
+      error: 'Database not set up. In the server folder run: npx prisma generate && npx prisma db push',
+    });
+  }
 });
 
 app.listen(PORT, () => {

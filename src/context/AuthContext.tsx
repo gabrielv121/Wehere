@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { migratePurchasesToUser } from '../data/userPurchases';
-import { isApiEnabled } from '../api/client';
+import { isApiEnabled, getToken, setToken, clearToken } from '../api/client';
 import * as authApi from '../api/auth';
 import type { ApiUser } from '../api/auth';
 
@@ -27,7 +27,8 @@ interface AuthState {
 
 interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
-  signup: (email: string, password: string, name: string) => Promise<{ ok: boolean; error?: string }>;
+  loginWithToken: (token: string) => Promise<{ ok: boolean; error?: string }>;
+  signup: (email: string, password: string, name: string) => Promise<{ ok: boolean; error?: string; verifyLink?: string }>;
   logout: () => void;
   updateProfile: (name: string, email: string) => Promise<{ ok: boolean; error?: string }>;
   updateSellerInfo: (data: {
@@ -92,11 +93,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ user: null, isLoading: true });
 
   useEffect(() => {
+    const onUnauthorized = () => setState({ user: null, isLoading: false });
+    window.addEventListener('wehere:unauthorized', onUnauthorized);
+    return () => window.removeEventListener('wehere:unauthorized', onUnauthorized);
+  }, []);
+
+  useEffect(() => {
     if (isApiEnabled) {
+      if (!getToken()) {
+        setState({ user: null, isLoading: false });
+        return;
+      }
+      const timeoutMs = 8000;
+      const timeoutId = setTimeout(() => {
+        setState((s) => (s.isLoading ? { user: null, isLoading: false } : s));
+      }, timeoutMs);
       authApi
         .getMe()
-        .then((u) => setState({ user: apiUserToUser(u), isLoading: false }))
-        .catch(() => setState({ user: null, isLoading: false }));
+        .then((u) => {
+          clearTimeout(timeoutId);
+          setState({ user: apiUserToUser(u), isLoading: false });
+        })
+        .catch(() => {
+          clearTimeout(timeoutId);
+          setState({ user: null, isLoading: false });
+        });
+      return () => clearTimeout(timeoutId);
     } else {
       const user = loadStoredUser();
       setState({ user, isLoading: false });
@@ -130,17 +152,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   }, []);
 
+  const loginWithToken = useCallback(async (token: string) => {
+    if (!isApiEnabled || !token?.trim()) return { ok: false, error: 'Invalid token' };
+    try {
+      setToken(token.trim());
+      const u = await authApi.getMe();
+      const user = apiUserToUser(u);
+      saveUser(user);
+      setState((s) => ({ ...s, user }));
+      return { ok: true };
+    } catch (err) {
+      clearToken();
+      return { ok: false, error: err instanceof Error ? err.message : 'Session invalid' };
+    }
+  }, []);
+
   const signup = useCallback(async (email: string, password: string, name: string) => {
     if (!email.trim()) return { ok: false, error: 'Email is required' };
     if (password.length < 6) return { ok: false, error: 'Password must be at least 6 characters' };
     if (!name.trim()) return { ok: false, error: 'Name is required' };
     if (isApiEnabled) {
       try {
-        const { user } = await authApi.register(email, password, name);
-        const u = apiUserToUser(user);
-        saveUser(u);
-        setState((s) => ({ ...s, user: u }));
-        return { ok: true };
+        const res = await authApi.register(email, password, name);
+        return { ok: true, verifyLink: res.verifyLink };
       } catch (err) {
         return { ok: false, error: err instanceof Error ? err.message : 'Signup failed' };
       }
@@ -230,6 +264,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthContextValue = {
     ...state,
     login,
+    loginWithToken,
     signup,
     logout,
     updateProfile,

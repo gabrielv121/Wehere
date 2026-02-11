@@ -1,6 +1,10 @@
 import type { Purchase, AdminOrder } from '../types';
 import { apiFetch } from './client.js';
 
+export interface OrdersConfig {
+  useStripe: boolean;
+}
+
 export interface CreateOrderInput {
   eventId: string;
   eventName: string;
@@ -14,6 +18,26 @@ export interface CreateOrderInput {
   totalPrice: number;
   listingId: string;
   sellerId: string;
+}
+
+export async function getOrdersConfig(): Promise<OrdersConfig> {
+  return apiFetch<OrdersConfig>('/api/orders/config');
+}
+
+export async function createCheckoutSession(input: CreateOrderInput & { buyerName?: string; buyerEmail?: string }): Promise<{ url: string }> {
+  return apiFetch<{ url: string }>('/api/orders/create-checkout-session', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function getOrderBySession(sessionId: string): Promise<Purchase> {
+  const raw = await apiFetch<Purchase & { venue: unknown }>(`/api/orders/by-session/${encodeURIComponent(sessionId)}`);
+  const venue =
+    raw.venue && typeof raw.venue === 'object' && 'name' in raw.venue
+      ? (raw.venue as { name: string; city: string; state: string })
+      : { name: '', city: '', state: '' };
+  return { ...raw, venue };
 }
 
 export async function createOrder(input: CreateOrderInput): Promise<Purchase> {
@@ -63,6 +87,28 @@ export async function setOrderTicketVerified(orderId: string): Promise<Purchase>
 
 export async function setOrderPayoutReleased(orderId: string): Promise<Purchase> {
   const raw = await apiFetch<Purchase & { venue: unknown }>(`/api/orders/${orderId}/release-payout`, {
+    method: 'PATCH',
+  });
+  const venue =
+    raw.venue && typeof raw.venue === 'object' && 'name' in raw.venue
+      ? (raw.venue as { name: string; city: string; state: string })
+      : { name: '', city: '', state: '' };
+  return { ...raw, venue };
+}
+
+export async function markOrderSellerSent(orderId: string): Promise<Purchase> {
+  const raw = await apiFetch<Purchase & { venue: unknown }>(`/api/orders/${orderId}/seller-sent`, {
+    method: 'PATCH',
+  });
+  const venue =
+    raw.venue && typeof raw.venue === 'object' && 'name' in raw.venue
+      ? (raw.venue as { name: string; city: string; state: string })
+      : { name: '', city: '', state: '' };
+  return { ...raw, venue };
+}
+
+export async function markOrderBuyerReceived(orderId: string): Promise<Purchase> {
+  const raw = await apiFetch<Purchase & { venue: unknown }>(`/api/orders/${orderId}/buyer-received`, {
     method: 'PATCH',
   });
   const venue =

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { isApiEnabled } from '../../api/client';
 import * as authApi from '../../api/auth';
 import type { AdminUserRow } from '../../api/auth';
@@ -84,7 +85,9 @@ export function AdminUsers() {
               <tbody>
                 {users.map((u) => (
                   <tr key={u.id} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="px-5 py-3 font-medium text-slate-900">{u.email}</td>
+                    <td className="px-5 py-3 font-medium text-slate-900">
+                      <Link to={`/admin/users/${u.id}`} className="text-teal-600 hover:underline">{u.email}</Link>
+                    </td>
                     <td className="px-5 py-3 text-slate-700">{u.name}</td>
                     <td className="px-5 py-3">
                       <span className={`rounded-full text-xs font-medium px-2 py-0.5 ${u.role === 'admin' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'}`}>

@@ -135,5 +135,6 @@ export function listingToTicketListing(listing: MarketplaceListing): import('../
     seller: listing.sellerName,
     listingId: listing.id,
     sellerId: listing.sellerId,
+    ada: listing.ada,
   };
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getSalesBySeller } from '../data/userPurchases';
@@ -18,7 +18,8 @@ function formatDate(iso: string) {
 export function MySales() {
   const { user } = useAuth();
   const [sales, setSales] = useState<Purchase[]>([]);
-  useEffect(() => {
+  const [sendingId, setSendingId] = useState<string | null>(null);
+  const load = useCallback(() => {
     if (!user) {
       setSales([]);
       return;
@@ -29,6 +30,19 @@ export function MySales() {
       setSales(getSalesBySeller(user.id));
     }
   }, [user?.id]);
+  useEffect(() => {
+    load();
+  }, [load]);
+  const handleMarkSent = async (orderId: string) => {
+    if (!isApiEnabled) return;
+    setSendingId(orderId);
+    try {
+      await ordersApi.markOrderSellerSent(orderId);
+      load();
+    } finally {
+      setSendingId(null);
+    }
+  };
   if (!user) return null;
 
   return (
@@ -76,13 +90,33 @@ export function MySales() {
                   {order.status === 'pending'
                     ? 'Pending (waiting on buyer / admin)'
                     : order.status === 'confirmed'
-                      ? 'Confirmed – waiting for delivery'
+                      ? order.sellerSentAt
+                        ? 'Sent – waiting for buyer to confirm'
+                        : 'Confirmed – send ticket within 24h'
                       : order.status === 'delivered'
                         ? order.sellerPayoutReleasedAt
                           ? 'Delivered – payout sent'
                           : 'Delivered – payout pending'
                         : 'Cancelled'}
                 </span>
+                {order.status === 'confirmed' && !order.sellerSentAt && isApiEnabled && (
+                  <div className="mt-2 space-y-1">
+                    <p className="text-xs text-slate-500">
+                      Use the transfer link from your sale email (Ticketmaster), then mark as sent below.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleMarkSent(order.id)}
+                      disabled={sendingId === order.id}
+                      className="text-sm font-medium text-teal-600 hover:text-teal-700 disabled:opacity-50"
+                    >
+                      {sendingId === order.id ? 'Updating…' : 'Mark as sent'}
+                    </button>
+                  </div>
+                )}
+                {order.status === 'confirmed' && order.sellerSentAt && (
+                  <p className="text-xs text-slate-500 mt-1">Waiting for buyer to confirm receipt.</p>
+                )}
                 {order.status === 'delivered' && !order.sellerPayoutReleasedAt && (
                   <p className="text-xs text-slate-500">
                     Payout will be released after WeHere finishes the verification flow.

@@ -10,14 +10,19 @@ function formatPrice(n: number) {
 
 export function TicketListingRow({
   listing,
-  isBestDeal,
+  isBestValue,
+  isBestPrice,
   externalUrl,
 }: {
   listing: TicketListing;
-  isBestDeal?: boolean;
+  /** Top listing when sorted by Best value (section + row + price) */
+  isBestValue?: boolean;
+  /** Top listing when sorted by Price (lowest total) */
+  isBestPrice?: boolean;
   /** When set, "Get tickets" opens this URL (e.g. Ticketmaster) instead of checkout */
   externalUrl?: string;
 }) {
+  const isBestDeal = isBestValue ?? isBestPrice;
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -70,9 +75,19 @@ export function TicketListingRow({
     >
       <div>
         <div className="flex items-center gap-2">
-          {isBestDeal && (
+          {isBestValue && (
             <span className="rounded-full bg-teal-500 text-white text-xs font-bold px-2 py-0.5">
-              Best deal
+              Best value
+            </span>
+          )}
+          {isBestPrice && !isBestValue && (
+            <span className="rounded-full bg-slate-600 text-white text-xs font-bold px-2 py-0.5">
+              Lowest price
+            </span>
+          )}
+          {listing.ada && (
+            <span className="rounded-full bg-slate-500 text-white text-xs font-medium px-2 py-0.5" title="Wheelchair accessible">
+              ADA
             </span>
           )}
           <p className="font-semibold text-slate-900">

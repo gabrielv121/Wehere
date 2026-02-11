@@ -4,6 +4,9 @@ import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
+  resolve: {
+    dedupe: ['react', 'react-dom'],
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -18,5 +21,12 @@ export default defineConfig({
   ],
   // For GitHub Pages: set in CI via BASE_PATH env (e.g. /WeHere/)
   base: process.env.BASE_PATH || '/',
-  server: {},
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+    },
+  },
 })

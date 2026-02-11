@@ -55,6 +55,12 @@ export function Checkout() {
   const [email, setEmail] = useState(user?.email ?? '');
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState('');
+  const [useStripe, setUseStripe] = useState(false);
+  useEffect(() => {
+    if (isApiEnabled) {
+      ordersApi.getOrdersConfig().then((c) => setUseStripe(c.useStripe)).catch(() => {});
+    }
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -105,6 +111,29 @@ export function Checkout() {
     setConfirming(true);
     try {
       if (isApiEnabled) {
+        if (useStripe) {
+          const { url } = await ordersApi.createCheckoutSession({
+            eventId: listing.eventId,
+            eventName: event.title,
+            eventDate: event.date,
+            eventImage: event.image,
+            venue: { name: event.venue.name, city: event.venue.city, state: event.venue.state },
+            section: listing.section,
+            row: listing.row,
+            quantity: listing.quantity,
+            pricePerTicket: listing.pricePerTicket,
+            totalPrice: listing.totalPrice,
+            listingId: listing.listingId,
+            sellerId: listing.sellerId,
+            buyerName: name.trim() || undefined,
+            buyerEmail: email.trim() || undefined,
+          });
+          if (url) {
+            window.location.href = url;
+            return;
+          }
+          sessionStorage.removeItem(CHECKOUT_STORAGE_KEY);
+        }
         const purchase = await ordersApi.createOrder({
           eventId: listing.eventId,
           eventName: event.title,
@@ -250,7 +279,7 @@ export function Checkout() {
           disabled={confirming}
           className="w-full py-3 rounded-xl bg-teal-500 text-white font-semibold hover:bg-teal-600 disabled:opacity-50 transition-colors"
         >
-          {confirming ? 'Processing…' : 'Confirm & continue'}
+          {confirming ? 'Processing…' : useStripe ? 'Continue to payment' : 'Confirm & continue'}
         </button>
       </div>
     </div>

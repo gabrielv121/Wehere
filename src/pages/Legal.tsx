@@ -4,6 +4,7 @@ const LEGAL_PAGES: Record<string, { title: string }> = {
   terms: { title: 'Terms of Service' },
   privacy: { title: 'Privacy Policy' },
   refund: { title: 'Refund Policy' },
+  cookies: { title: 'Cookie Policy' },
   disclaimer: { title: 'Disclaimer' },
 };
 

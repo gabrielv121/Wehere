@@ -14,6 +14,9 @@ model User {
   passwordHash         String
   name                 String
   role                 String   @default("user") // "user" | "admin"
+  provider             String?  // "google" | "apple" for OAuth
+  providerId           String?  // provider's unique user id
+  emailVerifiedAt      DateTime?
   country              String?
   phone                String?
   paymentMethodOnFile  Boolean  @default(false)
@@ -21,9 +24,31 @@ model User {
   cardBrand            String?
   createdAt            DateTime @default(now())
 
-  listings Listing[]
-  orders   Order[]    @relation("BuyerOrders")
-  sales    Order[]    @relation("SellerOrders")
+  listings                 Listing[]
+  orders                   Order[]    @relation("BuyerOrders")
+  sales                    Order[]    @relation("SellerOrders")
+  passwordResetTokens      PasswordResetToken[]
+  emailVerificationTokens  EmailVerificationToken[]
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Event {
@@ -86,6 +111,8 @@ model Order {
   sellerPayoutReleasedAt String?
   buyerName             String?
   buyerEmail            String?
+  stripeSessionId       String?   @unique
+  sellerSentAt          String?   // ISO – when seller marked "I sent the ticket"
 
   event   Event    @relation(fields: [eventId], references: [id])
   buyer   User     @relation("BuyerOrders", fields: [userId], references: [id])

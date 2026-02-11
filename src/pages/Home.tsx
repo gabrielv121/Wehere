@@ -1,3 +1,4 @@
+import { useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { SearchBar } from '../components/SearchBar';
 import { FeaturedCarousel } from '../components/FeaturedCarousel';
@@ -5,12 +6,62 @@ import { LiveEventsSection } from '../components/LiveEventsSection';
 import { CategoriesSection } from '../components/CategoriesSection';
 import { PopularThisWeekend } from '../components/PopularThisWeekend';
 import { EventCard } from '../components/EventCard';
+import { EventBlockRow } from '../components/EventBlockRow';
 import { useEvents } from '../context/EventsContext';
+import type { Event } from '../types';
+
+const EVENTS_PER_SLIDE_MOBILE = 3;
+
+function chunk<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    out.push(arr.slice(i, i + size));
+  }
+  return out;
+}
 
 export function Home() {
   const { events } = useEvents();
   const featured = events.filter((e) => e.visible !== false && e.featured);
   const more = events.filter((e) => e.visible !== false && !e.featured).slice(0, 4);
+
+  const moreMobileSlides = useMemo(() => chunk(more, EVENTS_PER_SLIDE_MOBILE), [more]);
+  const moreMobileSlideCount = moreMobileSlides.length;
+  const [moreMobileSlide, setMoreMobileSlide] = useState(0);
+  const [moreExiting, setMoreExiting] = useState(false);
+  const [moreEntering, setMoreEntering] = useState(false);
+  const [moreNextSlideIndex, setMoreNextSlideIndex] = useState<number | null>(null);
+  const [moreTouchStart, setMoreTouchStart] = useState<number | null>(null);
+
+  const goToMoreMobile = useCallback(
+    (direction: 1 | -1) => {
+      if (moreMobileSlideCount <= 1 || moreExiting || moreEntering) return;
+      const next = (moreMobileSlide + direction + moreMobileSlideCount) % moreMobileSlideCount;
+      setMoreNextSlideIndex(next);
+      setMoreExiting(true);
+    },
+    [moreMobileSlide, moreMobileSlideCount, moreExiting, moreEntering]
+  );
+
+  const handleMoreExitEnd = useCallback(() => {
+    if (!moreExiting || moreNextSlideIndex === null) return;
+    setMoreMobileSlide(moreNextSlideIndex);
+    setMoreNextSlideIndex(null);
+    setMoreExiting(false);
+    setMoreEntering(true);
+  }, [moreExiting, moreNextSlideIndex]);
+
+  const handleMoreEnterEnd = useCallback(() => setMoreEntering(false), []);
+
+  const handleMoreTouchStart = (e: React.TouchEvent) => setMoreTouchStart(e.touches[0].clientX);
+  const handleMoreTouchEnd = (e: React.TouchEvent) => {
+    if (moreTouchStart === null) return;
+    const dx = e.changedTouches[0].clientX - moreTouchStart;
+    setMoreTouchStart(null);
+    if (Math.abs(dx) < 50) return;
+    if (dx > 0) goToMoreMobile(-1);
+    else goToMoreMobile(1);
+  };
 
   return (
     <>
@@ -53,7 +104,55 @@ export function Home() {
               View all
             </Link>
           </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+
+          {/* Mobile: compact block carousel (swipe between slides) */}
+          <div
+            className={`sm:hidden min-h-[200px] ${moreExiting ? 'featured-exit' : moreEntering ? 'featured-enter' : ''} ${moreExiting || moreEntering ? 'pointer-events-none' : ''}`}
+            onAnimationEnd={() => {
+              if (moreExiting) handleMoreExitEnd();
+              if (moreEntering) handleMoreEnterEnd();
+            }}
+            onTouchStart={handleMoreTouchStart}
+            onTouchEnd={handleMoreTouchEnd}
+          >
+            <div className="space-y-3">
+              {(moreMobileSlides[moreMobileSlide] ?? []).map((event: Event) => (
+                <EventBlockRow key={event.id} event={event} />
+              ))}
+            </div>
+            {moreMobileSlideCount > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-3">
+                <button
+                  type="button"
+                  onClick={() => goToMoreMobile(-1)}
+                  disabled={moreExiting || moreEntering}
+                  className="p-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                  aria-label="Previous slide"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <span className="text-slate-500 text-sm font-medium tabular-nums min-w-[2rem] text-center">
+                  {moreMobileSlide + 1} / {moreMobileSlideCount}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => goToMoreMobile(1)}
+                  disabled={moreExiting || moreEntering}
+                  className="p-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                  aria-label="Next slide"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Desktop: grid of cards */}
+          <div className="hidden sm:grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {more.map((event) => (
               <EventCard key={event.id} event={event} />
             ))}

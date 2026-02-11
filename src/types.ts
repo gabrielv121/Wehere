@@ -36,6 +36,8 @@ export interface TicketListing {
   /** Set when listing is from marketplace (user resale); used at checkout */
   listingId?: string;
   sellerId?: string;
+  /** Wheelchair accessible / ADA seating */
+  ada?: boolean;
 }
 
 /** User-created resale listing (seller lists tickets they own) */
@@ -55,6 +57,8 @@ export interface MarketplaceListing {
   createdAt: string; // ISO
   /** When true, price was set from market and can be adjusted over time */
   dynamicPricing?: boolean;
+  /** Wheelchair accessible / ADA seating */
+  ada?: boolean;
 }
 
 export interface Seat {
@@ -70,7 +74,7 @@ export interface Seat {
 export interface VenueSection {
   id: string;
   name: string;
-  tier: 'floor' | 'lower' | 'upper';
+  tier: 'floor' | 'lower' | 'upper' | 'top';
   priceMin: number;
   priceMax: number;
   /** Display order for layout (e.g. left-to-right) */
@@ -105,6 +109,8 @@ export interface Purchase {
   sellerFeePercent?: number;
   /** Marketplace: amount released to seller after delivery (totalPrice - fee) */
   sellerPayout?: number;
+  /** When seller marked "I sent the ticket" (ISO) */
+  sellerSentAt?: string;
   /** Admin: when the ticket was verified as legit (ISO) */
   ticketVerifiedAt?: string;
   /** Admin: when payout was released to the seller (ISO) */

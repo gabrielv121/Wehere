@@ -6,7 +6,7 @@ A **resale marketplace**: sellers list tickets they own, buyers purchase with a 
 
 - **Home** — Hero, search, featured events, quick category links
 - **Events** — Search + filters: category, city, date. URL-driven (shareable links)
-- **Event detail** — Resale listings from fans; filter by party size; List your tickets for sellers; interactive seat map
+- **Event detail** — Resale listings from fans; filter by party size; List your tickets for sellers; interactive seat map (built-in or Seatics Maps API when configured)
 - **Sell tickets** — List tickets (section, row, qty, price). We hold payment; 10% seller fee.
 - **Account** — My listings, My sales, Payouts (seller), plus My tickets and Purchase history
 - **Auth** — Log in / Sign up (demo), persisted in localStorage
@@ -66,6 +66,50 @@ To run the app with a real database and auth:
 
    Then run the frontend (`npm run dev` from the repo root). The app will use the API for auth, events, listings, and orders when `VITE_API_URL` is set.
 
+   **Important:** Vite reads `.env` when the dev server starts. If you add or change `VITE_API_URL`, restart the frontend (`npm run dev`).
+
+### Troubleshooting: Can't log in or sign up
+
+- **Using the app without the backend (frontend only):** You're in *demo mode*. On the Login page, use **any email** and password **`password`** (literally the word "password"). Sign up works locally; to log in again later use password **`password`**.
+- **Using the backend:** Make sure:
+  1. The API is running: open a terminal, run `cd server` then `npm run dev`. You should see `WeHere API running at http://localhost:3001`. To confirm, open **http://localhost:3001/api/health** in your browser — you should see `{"ok":true,"message":"WeHere API"}`.
+  2. The database exists: in the `server/` folder run `npx prisma generate && npx prisma db push` (and optionally `npx prisma db seed` for admin `admin@wehere.com` / `password`).
+  3. In the **project root** `.env` either set `VITE_PROXY_API=true` (recommended: frontend proxies API requests) or `VITE_API_URL=http://localhost:3001`, then **restart the frontend** (Ctrl+C, then `npm run dev` from the project root).
+- If you still see "Cannot reach API": the backend is not running or not on port 3001. Start it in a separate terminal from the `server/` folder and check http://localhost:3001/api/health.
+
+### Stripe payments (optional)
+
+Checkout can use **Stripe** so buyers pay by card. Without Stripe, checkout creates orders directly (no real payment).
+
+1. **Get Stripe keys** — [dashboard.stripe.com/apikeys](https://dashboard.stripe.com/apikeys). Use test keys for development.
+2. **In `server/.env`** add:
+   ```
+   STRIPE_SECRET_KEY=sk_test_xxxx
+   FRONTEND_URL=http://localhost:5173
+   ```
+3. **Webhooks** — Stripe notifies your server when payment succeeds. For **local dev**, Stripe can’t reach localhost, so use the Stripe CLI:
+   ```bash
+   stripe listen --forward-to localhost:3001/api/orders/webhook
+   ```
+   Copy the webhook signing secret (e.g. `whsec_...`) and add to `server/.env`:
+   ```
+   STRIPE_WEBHOOK_SECRET=whsec_xxxx
+   ```
+4. Restart the backend. The checkout button becomes **Continue to payment** and redirects to Stripe; after payment, the webhook creates the order and the user is redirected to the success page.
+
+### Seatics seat maps (optional)
+
+Event pages can show an **interactive seat map** from the [Seatics Maps API](https://seatics.com/) (TicketNetwork) when you have a license and API credentials.
+
+1. Get **websiteConfigId** and **consumerKey** from Seatics/TicketNetwork (sandbox first, then production after approval).
+2. In the **project root** `.env` add:
+   ```
+   VITE_SEATICS_WEBSITE_CONFIG_ID=690
+   VITE_SEATICS_CONSUMER_KEY=your_sandbox_or_production_key
+   VITE_SEATICS_SANDBOX=true
+   ```
+3. Restart the frontend. Event detail pages will load the Seatics map (Custom UI) and display your listings on it. Event matching uses event name, venue name, and date; if Seatics has no map for that venue/date, a “No interactive map” message is shown and you can rely on the built-in SVG map instead.
+
 **API overview**
 
 | Area   | Endpoints |
@@ -73,7 +117,7 @@ To run the app with a real database and auth:
 | Auth   | `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`, `PATCH /api/auth/profile`, `PATCH /api/auth/seller-info` |
 | Events | `GET /api/events`, `GET /api/events/:id`, `POST /api/events` (admin), `PATCH /api/events/:id` (admin), `DELETE /api/events/:id` (admin) |
 | Listings | `GET /api/listings/event/:eventId`, `GET /api/listings/seller/:sellerId`, `POST /api/listings`, `GET /api/listings/:id`, `PATCH /api/listings/:id/status` |
-| Orders | `POST /api/orders` (checkout), `GET /api/orders/me`, `GET /api/orders/sales`, `GET /api/orders/admin` (admin), `PATCH /api/orders/:id/status`, `PATCH /api/orders/:id/verify`, `PATCH /api/orders/:id/release-payout` |
+| Orders | `GET /api/orders/config`, `POST /api/orders` (checkout when no Stripe), `POST /api/orders/create-checkout-session` (Stripe), `POST /api/orders/webhook` (Stripe), `GET /api/orders/by-session/:id`, `GET /api/orders/me`, `GET /api/orders/sales`, `GET /api/orders/admin`, `PATCH /api/orders/:id/status`, etc. |
 
 Protected routes expect: `Authorization: Bearer <token>`.
 

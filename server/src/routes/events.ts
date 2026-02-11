@@ -16,10 +16,15 @@ eventsRouter.get('/', async (req, res) => {
       where,
       orderBy: { date: 'asc' },
     });
-    const parsed = events.map((e) => ({
-      ...e,
-      venue: JSON.parse(e.venue) as { id: string; name: string; city: string; state: string },
-    }));
+    const parsed = events.map((e) => {
+      let venue: { id: string; name: string; city: string; state: string };
+      try {
+        venue = JSON.parse(e.venue) as { id: string; name: string; city: string; state: string };
+      } catch {
+        venue = { id: '', name: '', city: '', state: '' };
+      }
+      return { ...e, venue };
+    });
     if (typeof city === 'string' && city.trim()) {
       const filtered = parsed.filter((ev) =>
         ev.venue.city.toLowerCase().includes(city.trim().toLowerCase())
@@ -30,7 +35,11 @@ eventsRouter.get('/', async (req, res) => {
     res.json(parsed);
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: 'Failed to list events' });
+    const isDbError = e && typeof e === 'object' && 'code' in e && typeof (e as { code: string }).code === 'string' && ((e as { code: string }).code.startsWith('P1') || (e as { code: string }).code === 'P2021');
+    const msg = isDbError
+      ? 'Database schema out of date. In the server folder run: npx prisma generate && npx prisma db push'
+      : process.env.NODE_ENV === 'production' ? 'Failed to list events' : (e instanceof Error ? e.message : 'Failed to list events');
+    res.status(isDbError ? 503 : 500).json({ error: msg });
   }
 });
 
@@ -42,10 +51,13 @@ eventsRouter.get('/:id', async (req, res) => {
       res.status(404).json({ error: 'Event not found' });
       return;
     }
-    res.json({
-      ...event,
-      venue: JSON.parse(event.venue) as { id: string; name: string; city: string; state: string },
-    });
+    let venue: { id: string; name: string; city: string; state: string };
+    try {
+      venue = JSON.parse(event.venue) as { id: string; name: string; city: string; state: string };
+    } catch {
+      venue = { id: '', name: '', city: '', state: '' };
+    }
+    res.json({ ...event, venue });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Failed to load event' });

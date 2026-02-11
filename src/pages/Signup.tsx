@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { isApiEnabled } from '../api/client';
 
 export function Signup() {
   const [name, setName] = useState('');
@@ -8,6 +9,8 @@ export function Signup() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [checkEmail, setCheckEmail] = useState(false);
+  const [verifyLink, setVerifyLink] = useState<string | null>(null);
   const { signup } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -17,13 +20,45 @@ export function Signup() {
     e.preventDefault();
     setError('');
     setLoading(true);
+    setCheckEmail(false);
+    setVerifyLink(null);
     const result = await signup(email, password, name);
     setLoading(false);
     if (result.ok) {
+      if (isApiEnabled) {
+        setCheckEmail(true);
+        setVerifyLink(result.verifyLink ?? null);
+        return;
+      }
       navigate(redirect, { replace: true });
     } else {
       setError(result.error ?? 'Sign up failed');
     }
+  }
+
+  if (isApiEnabled && checkEmail) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-12">
+        <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+          <h1 className="text-2xl font-bold text-slate-900">Check your email</h1>
+          <p className="text-slate-500 mt-1">
+            We sent a verification link to <strong>{email}</strong>. Click it to verify your account, then log in.
+          </p>
+          {verifyLink && (
+            <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 text-sm">
+              <strong>Dev mode:</strong> Use this link to verify:
+              <br />
+              <a href={verifyLink} className="text-teal-600 underline break-all">
+                {verifyLink}
+              </a>
+            </div>
+          )}
+          <p className="mt-6">
+            <Link to="/login" className="text-teal-600 font-medium hover:underline">Back to Log in</Link>
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -32,10 +67,21 @@ export function Signup() {
         <h1 className="text-2xl font-bold text-slate-900">Create account</h1>
         <p className="text-slate-500 mt-1">Join WeHere to save events and get alerts</p>
 
+        {!isApiEnabled && (
+          <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 text-sm">
+            <strong>Demo mode:</strong> Your account is stored locally. To log in again later, use password <code className="bg-amber-100 px-1 rounded font-mono">password</code>. For real signup, set <code className="bg-amber-100 px-1 rounded">VITE_API_URL</code> and run the backend (see README).
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
           {error && (
             <div className="rounded-lg bg-red-50 text-red-700 px-4 py-3 text-sm">
               {error}
+              {error.includes('Cannot reach API') && (
+                <p className="mt-2 text-red-600">
+                  Start the backend in <code className="bg-red-100 px-1 rounded">server/</code> and set <code className="bg-red-100 px-1 rounded">VITE_API_URL=http://localhost:3001</code> in the project root <code className="bg-red-100 px-1 rounded">.env</code>, then restart the frontend.
+                </p>
+              )}
             </div>
           )}
           <div>

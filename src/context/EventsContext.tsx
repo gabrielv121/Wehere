@@ -12,6 +12,8 @@ interface EventsState {
 
 interface EventsContextValue extends EventsState {
   getEventById: (id: string) => Event | undefined;
+  /** When using API: fetch event by id if not in list and add it (e.g. for direct links). */
+  ensureEventInList: (id: string) => Promise<Event | undefined>;
   getUniqueCities: () => string[];
   getUniqueStates: () => string[];
   addEvent: (event: Omit<Event, 'id'>) => Promise<Event>;
@@ -54,7 +56,9 @@ export function EventsProvider({ children }: { children: ReactNode }) {
       eventsApi
         .getEvents()
         .then(setEvents)
-        .catch(() => setEvents([]))
+        .catch(() => {
+          setEvents(DEFAULT_EVENTS);
+        })
         .finally(() => setEventsLoading(false));
     }
   }, []);
@@ -65,6 +69,26 @@ export function EventsProvider({ children }: { children: ReactNode }) {
   const getEventById = useCallback(
     (id: string) => events.find((e) => e.id === id),
     [events]
+  );
+
+  const ensureEventInList = useCallback(
+    async (id: string): Promise<Event | undefined> => {
+      const found = events.find((e) => e.id === id);
+      if (found) return found;
+      if (!isApiEnabled) return undefined;
+      try {
+        const e = await eventsApi.getEventById(id);
+        if (e) {
+          const normalized = { ...e, visible: e.visible !== false, featured: e.featured === true };
+          setEvents((prev) => (prev.some((ev) => ev.id === id) ? prev : [...prev, normalized]));
+          return normalized;
+        }
+      } catch {
+        // ignore
+      }
+      return undefined;
+    },
+    [events, isApiEnabled]
   );
 
   const getUniqueCities = useCallback(() => {
@@ -124,6 +148,7 @@ export function EventsProvider({ children }: { children: ReactNode }) {
     () => ({
       events,
       getEventById,
+      ensureEventInList,
       getUniqueCities,
       getUniqueStates,
       addEvent,
@@ -133,7 +158,7 @@ export function EventsProvider({ children }: { children: ReactNode }) {
       setVisible,
       eventsLoading,
     }),
-    [events, getEventById, getUniqueCities, getUniqueStates, addEvent, updateEvent, deleteEvent, setFeatured, setVisible, eventsLoading]
+    [events, getEventById, ensureEventInList, getUniqueCities, getUniqueStates, addEvent, updateEvent, deleteEvent, setFeatured, setVisible, eventsLoading]
   );
 
   return <EventsContext.Provider value={value}>{children}</EventsContext.Provider>;

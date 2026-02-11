@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getUpcomingPurchases } from '../data/userPurchases';
@@ -24,7 +24,8 @@ function formatPrice(n: number) {
 export function MyTickets() {
   const { user } = useAuth();
   const [tickets, setTickets] = useState<Purchase[]>([]);
-  useEffect(() => {
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const load = useCallback(() => {
     if (!user) {
       setTickets([]);
       return;
@@ -42,6 +43,19 @@ export function MyTickets() {
       setTickets(getUpcomingPurchases(user.id).sort((a, b) => (a.eventDate < b.eventDate ? -1 : 1)));
     }
   }, [user?.id]);
+  useEffect(() => {
+    load();
+  }, [load]);
+  const handleConfirmReceived = async (orderId: string) => {
+    if (!isApiEnabled) return;
+    setConfirmingId(orderId);
+    try {
+      await ordersApi.markOrderBuyerReceived(orderId);
+      load();
+    } finally {
+      setConfirmingId(null);
+    }
+  };
 
   return (
     <div>
@@ -93,6 +107,11 @@ export function MyTickets() {
                         Pending · tickets not delivered yet
                       </span>
                     )}
+                    {p.status === 'confirmed' && p.sellerSentAt && (
+                      <span className="rounded-full bg-sky-100 text-sky-800 text-xs font-medium px-2 py-0.5">
+                        Ticket sent · confirm when you receive it
+                      </span>
+                    )}
                     {p.status === 'delivered' && (
                       <span className="rounded-full bg-teal-100 text-teal-700 text-xs font-medium px-2 py-0.5">
                         Delivered · you’re all set
@@ -100,9 +119,22 @@ export function MyTickets() {
                     )}
                   </div>
                 </div>
-                <span className="self-center sm:self-auto shrink-0 text-sm font-medium text-teal-600">
-                  View event →
-                </span>
+                <div className="self-center sm:self-auto shrink-0 flex flex-col items-end gap-2">
+                  {p.status === 'confirmed' && p.sellerSentAt && isApiEnabled && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleConfirmReceived(p.id);
+                      }}
+                      disabled={confirmingId === p.id}
+                      className="text-sm font-medium px-3 py-1.5 rounded-lg bg-teal-500 text-white hover:bg-teal-600 disabled:opacity-50"
+                    >
+                      {confirmingId === p.id ? 'Updating…' : 'I received my ticket'}
+                    </button>
+                  )}
+                  <span className="text-sm font-medium text-teal-600">View event →</span>
+                </div>
               </Link>
             </li>
           ))}
