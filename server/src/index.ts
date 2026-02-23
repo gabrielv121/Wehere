@@ -7,7 +7,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 config({ path: path.resolve(__dirname, '../../.env') });
 config({ path: path.resolve(__dirname, '../.env') });
 import express from 'express';
-import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
 import { authRouter } from './routes/auth.js';
 import { eventsRouter } from './routes/events.js';
@@ -19,28 +18,27 @@ const app = express();
 const PORT = process.env.PORT ?? 3001;
 const prisma = new PrismaClient();
 
-// Allow frontend origins (GitHub Pages + local dev). Required for requests from gabrielv121.github.io to Railway backend.
-const allowedOrigins = [
-  'https://gabrielv121.github.io',
-  'http://localhost:5173',
-  'http://localhost:3000',
-  /^http:\/\/127\.0\.0\.1(:\d+)?$/,
-  /^http:\/\/localhost(:\d+)?$/,
-];
-app.use(
-  cors({
-    origin: (origin, cb) => {
-      if (!origin || allowedOrigins.some((o) => (typeof o === 'string' ? o === origin : o.test(origin)))) {
-        cb(null, true);
-      } else {
-        cb(null, false);
-      }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  })
-);
+// CORS: allow GitHub Pages + local dev. Required for frontend at gabrielv121.github.io calling this API.
+const ALLOWED_ORIGIN = 'https://gabrielv121.github.io';
+const isAllowedOrigin = (origin: string | undefined) =>
+  !origin ||
+  origin === ALLOWED_ORIGIN ||
+  /^http:\/\/localhost(:\d+)?$/.test(origin) ||
+  /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(origin);
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (isAllowedOrigin(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin || ALLOWED_ORIGIN);
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  next();
+});
 app.post('/api/orders/webhook', express.raw({ type: 'application/json' }), stripeWebhookHandler);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
