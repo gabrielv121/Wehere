@@ -1,0 +1,57 @@
+# Copy this file to your USER SITE repo (gabrielv121/gabrielv121.github.io):
+#   .github/workflows/deploy.yml
+#
+# Then in that repo: Settings → Pages → Source = "GitHub Actions".
+# This builds the Wehere app with base '/' and deploys to https://gabrielv121.github.io/
+#
+# If checkout of Wehere fails (private repo or permissions), add a PAT with repo scope
+# as secret WEHERE_ACCESS_TOKEN and use: token: ${{ secrets.WEHERE_ACCESS_TOKEN }}
+
+name: Deploy WeHere to root
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Wehere
+        uses: actions/checkout@v4
+        with:
+          repository: gabrielv121/Wehere
+          path: wehere
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: wehere/package-lock.json
+
+      - name: Build (base / for root URL)
+        working-directory: wehere
+        run: npm ci && npm run build
+        env:
+          BASE_PATH: /
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: wehere/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deploy
