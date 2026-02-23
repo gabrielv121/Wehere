@@ -45,9 +45,7 @@ jobs:
             exit 1
           fi
 
-      # GitHub Pages serves 404.html for unknown paths — use same SPA so client-side routes work
-      - run: cp dist/index.html dist/404.html
-
+      # GitHub Pages serves 404.html for unknown paths — public/404.html redirects to index with path in query; index script rewrites URL for SPA router
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
