@@ -52,18 +52,19 @@ model PasswordResetToken {
 }
 
 model Event {
-  id         String   @id @default(cuid())
-  title      String
-  category   String   // concert | sports | theater | comedy | family
-  venue      String   // JSON: { id, name, city, state, image? }
-  date       String   // ISO datetime
-  image      String
-  minPrice   Int
-  maxPrice   Int?
-  featured   Boolean  @default(false)
-  visible    Boolean  @default(true)
-  externalUrl String?
-  createdAt  DateTime @default(now())
+  id             String   @id @default(cuid())
+  title          String
+  category       String   // concert | sports | theater | comedy | family
+  venue          String   // JSON: { id, name, city, state, image? }
+  date           String   // ISO datetime
+  image          String
+  minPrice       Int
+  maxPrice       Int?
+  featured       Boolean  @default(false)
+  visible        Boolean  @default(true)
+  externalUrl    String?
+  ticketmasterId String?  @unique // for upsert when listing from Ticketmaster
+  createdAt      DateTime @default(now())
 
   listings Listing[]
   orders   Order[]

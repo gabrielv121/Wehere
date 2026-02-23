@@ -39,10 +39,10 @@ export function Footer() {
           <div>
             <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">Company</h3>
             <ul className="space-y-2.5 text-sm">
-              <li><Link to="/" className="text-slate-600 hover:text-teal-600 transition-colors">About us</Link></li>
-              <li><Link to="/" className="text-slate-600 hover:text-teal-600 transition-colors">Careers</Link></li>
-              <li><Link to="/" className="text-slate-600 hover:text-teal-600 transition-colors">Press</Link></li>
-              <li><a href="mailto:hello@wehere.com" className="text-slate-600 hover:text-teal-600 transition-colors">Contact</a></li>
+              <li><Link to="/about" className="text-slate-600 hover:text-teal-600 transition-colors">About Us</Link></li>
+              <li><Link to="/careers" className="text-slate-600 hover:text-teal-600 transition-colors">Careers</Link></li>
+              <li><Link to="/press" className="text-slate-600 hover:text-teal-600 transition-colors">Press</Link></li>
+              <li><Link to="/contact" className="text-slate-600 hover:text-teal-600 transition-colors">Contact</Link></li>
             </ul>
           </div>
 
@@ -50,10 +50,10 @@ export function Footer() {
           <div>
             <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">For fans</h3>
             <ul className="space-y-2.5 text-sm">
-              <li><Link to="/events" className="text-slate-600 hover:text-teal-600 transition-colors">Browse events</Link></li>
-              <li><Link to="/sell" className="text-slate-600 hover:text-teal-600 transition-colors">Sell tickets</Link></li>
-              <li><Link to="/" className="text-slate-600 hover:text-teal-600 transition-colors">How it works</Link></li>
-              <li><Link to="/" className="text-slate-600 hover:text-teal-600 transition-colors">Gift cards</Link></li>
+              <li><Link to="/events" className="text-slate-600 hover:text-teal-600 transition-colors">Browse Events</Link></li>
+              <li><Link to="/sell" className="text-slate-600 hover:text-teal-600 transition-colors">Sell Tickets</Link></li>
+              <li><Link to="/how-it-works" className="text-slate-600 hover:text-teal-600 transition-colors">How It Works</Link></li>
+              <li><Link to="/gift-cards" className="text-slate-600 hover:text-teal-600 transition-colors">Gift Cards</Link></li>
             </ul>
           </div>
 
@@ -61,10 +61,10 @@ export function Footer() {
           <div>
             <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4">Support</h3>
             <ul className="space-y-2.5 text-sm">
-              <li><Link to="/" className="text-slate-600 hover:text-teal-600 transition-colors">Help center</Link></li>
-              <li><a href="mailto:support@wehere.com" className="text-slate-600 hover:text-teal-600 transition-colors">Contact us</a></li>
-              <li><Link to="/" className="text-slate-600 hover:text-teal-600 transition-colors">FAQ</Link></li>
-              <li><Link to="/legal/refund" className="text-slate-600 hover:text-teal-600 transition-colors">Refunds</Link></li>
+              <li><Link to="/help" className="text-slate-600 hover:text-teal-600 transition-colors">Help Center</Link></li>
+              <li><Link to="/contact" className="text-slate-600 hover:text-teal-600 transition-colors">Contact Us</Link></li>
+              <li><Link to="/faq" className="text-slate-600 hover:text-teal-600 transition-colors">FAQ</Link></li>
+              <li><Link to="/legal/refund" className="text-slate-600 hover:text-teal-600 transition-colors">Refunds Policy</Link></li>
             </ul>
           </div>
 

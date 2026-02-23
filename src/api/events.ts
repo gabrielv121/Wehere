@@ -1,10 +1,11 @@
 import type { Event } from '../types';
 import { apiFetch } from './client.js';
 
-export async function getEvents(params?: { category?: string; city?: string }): Promise<Event[]> {
+export async function getEvents(params?: { category?: string; city?: string; hasListings?: boolean }): Promise<Event[]> {
   const sp = new URLSearchParams();
   if (params?.category) sp.set('category', params.category);
   if (params?.city) sp.set('city', params.city);
+  if (params?.hasListings === true) sp.set('hasListings', 'true');
   const q = sp.toString();
   const list = await apiFetch<Event[]>(`/api/events${q ? `?${q}` : ''}`);
   return list.map((e) => ({ ...e, visible: e.visible !== false, featured: e.featured === true }));

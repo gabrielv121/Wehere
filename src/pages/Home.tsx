@@ -5,6 +5,7 @@ import { FeaturedCarousel } from '../components/FeaturedCarousel';
 import { LiveEventsSection } from '../components/LiveEventsSection';
 import { CategoriesSection } from '../components/CategoriesSection';
 import { PopularThisWeekend } from '../components/PopularThisWeekend';
+import { CategoryCarouselSection } from '../components/CategoryCarouselSection';
 import { EventCard } from '../components/EventCard';
 import { EventBlockRow } from '../components/EventBlockRow';
 import { useEvents } from '../context/EventsContext';
@@ -161,6 +162,31 @@ export function Home() {
       )}
 
       <PopularThisWeekend />
+
+      <CategoryCarouselSection
+        title="Top Teams"
+        category="sports"
+        viewAllHref="/events?category=sports"
+        eventsPerSlide={3}
+      />
+      <CategoryCarouselSection
+        title="Concerts"
+        category="concert"
+        viewAllHref="/events?category=concert"
+        eventsPerSlide={4}
+      />
+      <CategoryCarouselSection
+        title="Top Broadway Shows"
+        category="theater"
+        viewAllHref="/events?category=theater"
+        eventsPerSlide={3}
+      />
+      <CategoryCarouselSection
+        title="Comedy"
+        category="comedy"
+        viewAllHref="/events?category=comedy"
+        eventsPerSlide={4}
+      />
     </>
   );
 }

@@ -83,69 +83,69 @@ export function Layout() {
             </svg>
           </button>
         </div>
-
-        {/* Mobile menu panel */}
-        {menuOpen && (
-          <>
-            <div
-              className="fixed inset-0 z-40 bg-black/20 md:hidden"
-              aria-hidden
-              onClick={closeMenu}
-            />
-            <nav
-              className="absolute left-0 right-0 top-14 z-40 md:hidden bg-white border-b border-slate-200 shadow-lg py-4 px-4"
-              aria-label="Mobile menu"
-            >
-              <div className="flex flex-col gap-1">
-                <Link to="/events" onClick={closeMenu} className="py-3 px-3 rounded-lg text-slate-700 font-medium hover:bg-slate-100 hover:text-teal-600">
-                  Events
-                </Link>
-                {user?.role !== 'admin' && (
-                  <Link to="/sell" onClick={closeMenu} className="py-3 px-3 rounded-lg text-slate-700 font-medium hover:bg-slate-100 hover:text-teal-600">
-                    Sell tickets
-                  </Link>
-                )}
-                <Link to="/events?category=concert" onClick={closeMenu} className="py-3 px-3 rounded-lg text-slate-700 font-medium hover:bg-slate-100 hover:text-teal-600">
-                  Concerts
-                </Link>
-                <Link to="/events?category=sports" onClick={closeMenu} className="py-3 px-3 rounded-lg text-slate-700 font-medium hover:bg-slate-100 hover:text-teal-600">
-                  Sports
-                </Link>
-                {!isLoading && (
-                  user ? (
-                    <>
-                      {user.role === 'admin' && (
-                        <Link to="/admin" onClick={closeMenu} className="py-3 px-3 rounded-lg text-slate-700 font-medium hover:bg-slate-100 hover:text-teal-600">
-                          Dashboard
-                        </Link>
-                      )}
-                      <Link to="/account" onClick={closeMenu} className="py-3 px-3 rounded-lg text-slate-700 font-medium hover:bg-slate-100 hover:text-teal-600">
-                        {user.name}
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => { closeMenu(); logout(); }}
-                        className="py-3 px-3 rounded-lg text-left text-slate-500 font-medium hover:bg-slate-100 hover:text-slate-700"
-                      >
-                        Log out
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <Link to="/login" onClick={closeMenu} className="py-3 px-3 rounded-lg text-slate-700 font-medium hover:bg-slate-100 hover:text-teal-600">
-                        Log in
-                      </Link>
-                      <Link to="/signup" onClick={closeMenu} className="py-3 px-3 rounded-lg mt-2 bg-teal-500 text-white font-semibold text-center hover:bg-teal-600">
-                        Sign up
-                      </Link>
-                    </>
-                  )
-                )}
-              </div>
-            </nav>
-          </>
-        )}
       </header>
+
+      {/* Mobile menu panel: compact right-aligned dropdown (TickPick-style) */}
+      {menuOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/10 md:hidden"
+            aria-hidden
+            onClick={closeMenu}
+          />
+          <nav
+            className="fixed right-4 top-14 z-40 md:hidden w-56 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-4rem)] bg-white border border-slate-200 shadow-lg rounded-xl py-2 overflow-y-auto"
+            aria-label="Mobile menu"
+          >
+            <div className="flex flex-col gap-0.5 px-2">
+              <Link to="/events" onClick={closeMenu} className="py-2 px-2 rounded-md text-slate-700 font-medium hover:bg-slate-100 hover:text-teal-600 text-sm">
+                Events
+              </Link>
+              {user?.role !== 'admin' && (
+                <Link to="/sell" onClick={closeMenu} className="py-2 px-2 rounded-md text-slate-700 font-medium hover:bg-slate-100 hover:text-teal-600 text-sm">
+                  Sell tickets
+                </Link>
+              )}
+              <Link to="/events?category=concert" onClick={closeMenu} className="py-2 px-2 rounded-md text-slate-700 font-medium hover:bg-slate-100 hover:text-teal-600 text-sm">
+                Concerts
+              </Link>
+              <Link to="/events?category=sports" onClick={closeMenu} className="py-2 px-2 rounded-md text-slate-700 font-medium hover:bg-slate-100 hover:text-teal-600 text-sm">
+                Sports
+              </Link>
+              {!isLoading && (
+                user ? (
+                  <>
+                    {user.role === 'admin' && (
+                      <Link to="/admin" onClick={closeMenu} className="py-2 px-2 rounded-md text-slate-700 font-medium hover:bg-slate-100 hover:text-teal-600 text-sm">
+                        Dashboard
+                      </Link>
+                    )}
+                    <Link to="/account" onClick={closeMenu} className="py-2 px-2 rounded-md text-slate-700 font-medium hover:bg-slate-100 hover:text-teal-600 text-sm">
+                      {user.name}
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => { closeMenu(); logout(); }}
+                      className="py-2 px-2 rounded-md text-left text-slate-500 font-medium hover:bg-slate-100 hover:text-slate-700 text-sm"
+                    >
+                      Log out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/login" onClick={closeMenu} className="py-2 px-2 rounded-md text-slate-700 font-medium hover:bg-slate-100 hover:text-teal-600 text-sm">
+                      Log in
+                    </Link>
+                    <Link to="/signup" onClick={closeMenu} className="py-2 px-2 rounded-md mt-1 bg-teal-500 text-white font-semibold text-center hover:bg-teal-600 text-sm">
+                      Sign up
+                    </Link>
+                  </>
+                )
+              )}
+            </div>
+          </nav>
+        </>
+      )}
       <main className="flex-1">
         <Outlet />
       </main>

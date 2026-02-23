@@ -5,6 +5,8 @@ import { useEvents } from '../context/EventsContext';
 import { addListing, getMarketPriceStats } from '../data/listings';
 import { isApiEnabled } from '../api/client';
 import * as listingsApi from '../api/listings';
+import { EventSearchPicker } from '../components/EventSearchPicker';
+import type { Event } from '../types';
 
 const CARD_BRANDS = ['Visa', 'Mastercard', 'Amex', 'Discover'];
 const LIST_DRAFT_KEY = 'wehere_listing_draft';
@@ -25,6 +27,7 @@ export function ListTickets() {
   const [step, setStep] = useState<1 | 2>(1);
 
   const [eventId, setEventId] = useState(stateEventId);
+  const [selectedEvent, setSelectedEvent] = useState<Event | undefined>(undefined);
   const [section, setSection] = useState('');
   const [row, setRow] = useState('');
   const [quantity, setQuantity] = useState(2);
@@ -39,7 +42,7 @@ export function ListTickets() {
   const [cardBrand, setCardBrand] = useState(user?.cardBrand ?? 'Visa');
   const [savingSeller, setSavingSeller] = useState(false);
 
-  const event = eventId ? getEventById(eventId) : undefined;
+  const event = selectedEvent ?? (eventId ? getEventById(eventId) : undefined);
   const marketStats = useMemo(
     () => getMarketPriceStats(eventId, event ? { minPrice: event.minPrice, maxPrice: event.maxPrice } : undefined),
     [eventId, event]
@@ -192,23 +195,17 @@ export function ListTickets() {
 
       {step === 1 && (
         <form onSubmit={handleTicketStepSubmit} className="space-y-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div>
-            <label htmlFor="list-event" className="block text-sm font-medium text-slate-700 mb-1">Event *</label>
-            <select
-              id="list-event"
-              value={eventId}
-              onChange={(e) => setEventId(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-slate-900"
-              required
-            >
-              <option value="">Select an event</option>
-              {visibleEvents.map((ev) => (
-                <option key={ev.id} value={ev.id}>
-                  {ev.title} · {ev.venue.name} · {new Date(ev.date).toLocaleDateString()}
-                </option>
-              ))}
-            </select>
-          </div>
+          <EventSearchPicker
+            id="list-event"
+            label="Event"
+            value={eventId}
+            onChange={(id, ev) => {
+              setEventId(id);
+              setSelectedEvent(ev ?? undefined);
+            }}
+            fallbackEvents={visibleEvents}
+            placeholder="Search events by name…"
+          />
 
           {eventId && (
             <div className="rounded-xl border border-teal-200 bg-teal-50/80 p-4 space-y-3">

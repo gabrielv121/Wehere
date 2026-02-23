@@ -5,13 +5,16 @@ import { requireAuth, requireAdmin, type AuthRequest } from '../middleware/auth.
 const prisma = new PrismaClient();
 export const eventsRouter = Router();
 
-/** GET /api/events — list events (optional: category, city, visible-only for public) */
+/** GET /api/events — list events (optional: category, city, visible, hasListings) */
 eventsRouter.get('/', async (req, res) => {
   try {
-    const { category, city, visible } = req.query;
-    const where: { category?: string; visible?: boolean } = {};
+    const { category, city, visible, hasListings } = req.query;
+    const where: { category?: string; visible?: boolean; listings?: { some: { status: string } } } = {};
     if (typeof category === 'string' && category) where.category = category;
     if (typeof visible === 'string' && visible !== 'false') where.visible = true;
+    if (typeof hasListings === 'string' && hasListings === 'true') {
+      where.listings = { some: { status: 'available' } };
+    }
     const events = await prisma.event.findMany({
       where,
       orderBy: { date: 'asc' },
@@ -61,6 +64,64 @@ eventsRouter.get('/:id', async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Failed to load event' });
+  }
+});
+
+/** POST /api/events/from-ticketmaster — upsert event from Ticketmaster (for sell flow) */
+eventsRouter.post('/from-ticketmaster', async (req, res) => {
+  try {
+    const body = req.body as {
+      id: string;
+      title: string;
+      category: string;
+      venue: { id: string; name: string; city: string; state: string };
+      date: string;
+      image: string;
+      externalUrl?: string;
+    };
+    if (!body.id || !body.title || !body.category || !body.venue || !body.date) {
+      res.status(400).json({ error: 'Missing required fields (id, title, category, venue, date)' });
+      return;
+    }
+    const venue = {
+      id: body.venue.id || `v-${Date.now()}`,
+      name: body.venue.name,
+      city: body.venue.city,
+      state: body.venue.state,
+    };
+    const existing = await prisma.event.findUnique({ where: { ticketmasterId: body.id } });
+    const data = {
+      title: body.title,
+      category: body.category,
+      venue: JSON.stringify(venue),
+      date: body.date,
+      image: body.image || '',
+      minPrice: 0,
+      maxPrice: null as number | null,
+      featured: false,
+      visible: true,
+      externalUrl: body.externalUrl ?? null,
+      ticketmasterId: body.id,
+    };
+    let event;
+    if (existing) {
+      event = await prisma.event.update({
+        where: { id: existing.id },
+        data: {
+          title: data.title,
+          venue: data.venue,
+          date: data.date,
+          image: data.image,
+          externalUrl: data.externalUrl,
+        },
+      });
+    } else {
+      event = await prisma.event.create({ data });
+    }
+    res.json({ ...event, venue });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to save event.' });
   }
 });
 

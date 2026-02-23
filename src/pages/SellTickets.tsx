@@ -3,6 +3,8 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useEvents } from '../context/EventsContext';
 import { getMarketPriceStats } from '../data/listings';
+import { EventSearchPicker } from '../components/EventSearchPicker';
+import type { Event } from '../types';
 
 const LIST_DRAFT_KEY = 'wehere_listing_draft';
 
@@ -21,6 +23,7 @@ export function SellTickets() {
   const initialEventId = state?.eventId ?? '';
 
   const [eventId, setEventId] = useState(initialEventId);
+  const [selectedEvent, setSelectedEvent] = useState<Event | undefined>(undefined);
   const [section, setSection] = useState('');
   const [row, setRow] = useState('');
   const [quantity, setQuantity] = useState(2);
@@ -29,7 +32,7 @@ export function SellTickets() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const event = eventId ? getEventById(eventId) : undefined;
+  const event = selectedEvent ?? (eventId ? getEventById(eventId) : undefined);
   const marketStats = event ? getMarketPriceStats(eventId, { minPrice: event.minPrice, maxPrice: event.maxPrice }) : null;
 
   useEffect(() => {
@@ -99,25 +102,17 @@ export function SellTickets() {
       <p className="text-slate-600 text-sm font-medium mb-8">Step 1 of 2 — Ticket details</p>
 
       <form onSubmit={handleSubmit} className="space-y-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div>
-          <label htmlFor="sell-event" className="block text-sm font-medium text-slate-700 mb-1">
-            Event *
-          </label>
-          <select
-            id="sell-event"
-            value={eventId}
-            onChange={(e) => setEventId(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-slate-900"
-            required
-          >
-            <option value="">Select an event</option>
-            {visibleEvents.map((ev) => (
-              <option key={ev.id} value={ev.id}>
-                {ev.title} · {ev.venue.name} · {new Date(ev.date).toLocaleDateString()}
-              </option>
-            ))}
-          </select>
-        </div>
+        <EventSearchPicker
+          id="sell-event"
+          label="Event"
+          value={eventId}
+          onChange={(id, ev) => {
+            setEventId(id);
+            setSelectedEvent(ev ?? undefined);
+          }}
+          fallbackEvents={visibleEvents}
+          placeholder="Search events by name…"
+        />
 
         {event && (
           <div className="rounded-xl border border-teal-200 bg-teal-50/80 p-4 space-y-3">

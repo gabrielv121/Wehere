@@ -1,9 +1,17 @@
-import 'dotenv/config';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { config } from 'dotenv';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Load root .env first (when server is run from root), then server/.env (takes precedence)
+config({ path: path.resolve(__dirname, '../../.env') });
+config({ path: path.resolve(__dirname, '../.env') });
 import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
 import { authRouter } from './routes/auth.js';
 import { eventsRouter } from './routes/events.js';
+import { ticketmasterRouter } from './routes/ticketmaster.js';
 import { listingsRouter } from './routes/listings.js';
 import { ordersRouter, stripeWebhookHandler } from './routes/orders.js';
 
@@ -26,6 +34,7 @@ app.use((req, res, next) => {
 
 app.use('/api/auth', authRouter);
 app.use('/api/events', eventsRouter);
+app.use('/api/ticketmaster', ticketmasterRouter);
 app.use('/api/listings', listingsRouter);
 app.use('/api/orders', ordersRouter);
 

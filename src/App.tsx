@@ -25,6 +25,14 @@ import { SellTickets } from './pages/SellTickets';
 import { Checkout } from './pages/Checkout';
 import { CheckoutSuccess } from './pages/CheckoutSuccess';
 import { Legal } from './pages/Legal';
+import { About } from './pages/About';
+import { Careers } from './pages/Careers';
+import { Press } from './pages/Press';
+import { Contact } from './pages/Contact';
+import { HowItWorks } from './pages/HowItWorks';
+import { GiftCards } from './pages/GiftCards';
+import { Help } from './pages/Help';
+import { FAQ } from './pages/FAQ';
 import { AdminRoute } from './components/AdminRoute';
 import { AdminLayout } from './components/AdminLayout';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
@@ -70,6 +78,14 @@ function App() {
                 <Route path="reset-password" element={<ResetPassword />} />
                 <Route path="verify-email" element={<VerifyEmail />} />
                 <Route path="resend-verification" element={<ResendVerification />} />
+                <Route path="about" element={<About />} />
+                <Route path="careers" element={<Careers />} />
+                <Route path="press" element={<Press />} />
+                <Route path="contact" element={<Contact />} />
+                <Route path="how-it-works" element={<HowItWorks />} />
+                <Route path="gift-cards" element={<GiftCards />} />
+                <Route path="help" element={<Help />} />
+                <Route path="faq" element={<FAQ />} />
                 <Route path="legal/:slug" element={<Legal />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
