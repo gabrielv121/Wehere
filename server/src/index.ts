@@ -19,7 +19,28 @@ const app = express();
 const PORT = process.env.PORT ?? 3001;
 const prisma = new PrismaClient();
 
-app.use(cors({ origin: true, credentials: true }));
+// Allow frontend origins (GitHub Pages + local dev). Required for requests from gabrielv121.github.io to Railway backend.
+const allowedOrigins = [
+  'https://gabrielv121.github.io',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  /^http:\/\/127\.0\.0\.1(:\d+)?$/,
+  /^http:\/\/localhost(:\d+)?$/,
+];
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      if (!origin || allowedOrigins.some((o) => (typeof o === 'string' ? o === origin : o.test(origin)))) {
+        cb(null, true);
+      } else {
+        cb(null, false);
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
 app.post('/api/orders/webhook', express.raw({ type: 'application/json' }), stripeWebhookHandler);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
