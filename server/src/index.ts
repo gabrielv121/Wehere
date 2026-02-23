@@ -7,7 +7,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 config({ path: path.resolve(__dirname, '../../.env') });
 config({ path: path.resolve(__dirname, '../.env') });
 import express from 'express';
-import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
 import { authRouter } from './routes/auth.js';
 import { eventsRouter } from './routes/events.js';
@@ -19,25 +18,30 @@ const app = express();
 const PORT = process.env.PORT ?? 3001;
 const prisma = new PrismaClient();
 
-// CORS: allow GitHub Pages + local dev. Must run before any route so preflight OPTIONS gets headers.
-const allowedOrigins = [
-  'https://gabrielv121.github.io',
+// CORS: must run first. Allow GitHub Pages + localhost so frontend can call this API.
+const CORS_ORIGIN = 'https://gabrielv121.github.io';
+const CORS_ORIGINS = [
+  CORS_ORIGIN,
   /^http:\/\/localhost(:\d+)?$/,
   /^http:\/\/127\.0\.0\.1(:\d+)?$/,
 ];
-app.use(
-  cors({
-    origin: (origin, cb) => {
-      if (!origin) return cb(null, true);
-      const ok = allowedOrigins.some((o) => (typeof o === 'string' ? o === origin : o.test(origin)));
-      cb(null, ok ? origin : false);
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    optionsSuccessStatus: 204,
-  })
-);
+function setCorsHeaders(req: express.Request, res: express.Response): void {
+  const origin = req.headers.origin;
+  const allow = !origin || CORS_ORIGINS.some((o) => (typeof o === 'string' ? o === origin : o.test(origin)));
+  if (allow) {
+    res.setHeader('Access-Control-Allow-Origin', origin || CORS_ORIGIN);
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+}
+app.use((req, res, next) => {
+  setCorsHeaders(req, res);
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  next();
+});
 app.post('/api/orders/webhook', express.raw({ type: 'application/json' }), stripeWebhookHandler);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -69,6 +73,6 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`WeHere API running at http://localhost:${PORT}`);
+app.listen(Number(PORT), '0.0.0.0', () => {
+  console.log(`WeHere API running on port ${PORT}`);
 });

@@ -47,10 +47,16 @@ Check for:
 
 ## 5. Test the API
 
-When logs show the server running, open:
+When logs show the server running, try in order:
 
-**https://wehere-production.up.railway.app/api/health**
+1. **Ping (no DB):**  
+   **https://wehere-production.up.railway.app/api/ping**  
+   - Expect: `{"pong":true}`  
+   - If this fails (timeout, 502, “Application failed to respond”), the process is not running or not reachable. Recheck Root Directory, start command, and deploy logs.
 
-You should see: `{"ok":true,"message":"WeHere API"}`.
+2. **Health (uses DB):**  
+   **https://wehere-production.up.railway.app/api/health**  
+   - Expect: `{"ok":true,"message":"WeHere API"}`  
+   - If ping works but health is 503, the app is up but the database is missing or wrong (check `DATABASE_URL` and that `prisma db push` ran in the build).
 
-If that works, the same URL is used by the frontend and CORS will work (the app is now responding with the right headers).
+If **ping** works, the API is up and CORS will work for the frontend (same origin is allowed in code).
