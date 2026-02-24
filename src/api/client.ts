@@ -1,9 +1,15 @@
 const EXPLICIT_API_URL = (import.meta.env.VITE_API_URL as string)?.replace(/\/$/, '') ?? '';
 const USE_PROXY = import.meta.env.DEV && import.meta.env.VITE_PROXY_API === 'true';
-const BASE_URL = EXPLICIT_API_URL || (USE_PROXY ? '' : '');
+
+// When no explicit API URL is provided (e.g. Railway hosting both frontend and backend),
+// fall back to same-origin so the app uses the real API instead of demo data.
+const RUNTIME_ORIGIN = typeof window !== 'undefined' ? window.location.origin : '';
+const BASE_URL = EXPLICIT_API_URL || (USE_PROXY ? '' : RUNTIME_ORIGIN);
 const TOKEN_KEY = 'wehere_token';
 
-export const isApiEnabled = Boolean(EXPLICIT_API_URL || USE_PROXY);
+// Enable API mode when we either have an explicit API URL, are using the dev proxy,
+// or are running in a browser with a known origin (e.g. Railway same-origin hosting).
+export const isApiEnabled = Boolean(EXPLICIT_API_URL || USE_PROXY || RUNTIME_ORIGIN);
 
 /** Base URL for API (and OAuth) requests. Empty when using Vite proxy. */
 export function getBaseUrl(): string {
