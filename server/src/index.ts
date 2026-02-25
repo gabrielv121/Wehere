@@ -13,6 +13,7 @@ import { eventsRouter } from './routes/events.js';
 import { ticketmasterRouter } from './routes/ticketmaster.js';
 import { listingsRouter } from './routes/listings.js';
 import { ordersRouter, stripeWebhookHandler } from './routes/orders.js';
+import { stripeConnectRouter } from './routes/stripeConnect.js';
 
 const app = express();
 const PORT = process.env.PORT ?? 3001;
@@ -59,6 +60,7 @@ app.use('/api/events', eventsRouter);
 app.use('/api/ticketmaster', ticketmasterRouter);
 app.use('/api/listings', listingsRouter);
 app.use('/api/orders', ordersRouter);
+app.use('/api/stripe', stripeConnectRouter);
 
 app.get('/api/health', async (_req, res) => {
   try {

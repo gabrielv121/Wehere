@@ -22,6 +22,10 @@ model User {
   paymentMethodOnFile  Boolean  @default(false)
   cardLast4            String?
   cardBrand            String?
+  /// Stripe Connect account id for this seller (acct_xxx)
+  stripeAccountId      String?  @unique
+  /// Whether Stripe says this account is ready for payouts (from account.updated webhooks)
+  stripePayoutReady    Boolean  @default(false)
   createdAt            DateTime @default(now())
 
   listings                 Listing[]
